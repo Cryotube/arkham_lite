@@ -1,3 +1,6 @@
 # BMAD (local only)
 .bmad-core/
 .bmad-*/
+
+# Godot build outputs
+/artifacts/
