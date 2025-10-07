@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://moduleoxygensiphon"]
+
+[ext_resource type="Script" path="res://scripts/resources/equipment_module_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"oxygen_siphon"
+display_name = "Oxygen Siphon"
+description = "Recover 1 oxygen after exhausting a die."
+shape_mask = [ Vector2i(0, 0), Vector2i(1, 0), Vector2i(1, 1) ]
+burden = 4
+dice_costs = []
+passive_slots = [ &"passive_oxygen" ]
+allow_rotation = true

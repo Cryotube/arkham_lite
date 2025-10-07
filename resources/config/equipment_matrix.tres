@@ -1,0 +1,22 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://equipmentmatrix"]
+
+[ext_resource type="Script" path="res://scripts/resources/equipment_matrix_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+grid_width = 6
+grid_height = 5
+base_burden = 0
+strained_threshold = 8
+critical_threshold = 12
+slot_bindings = {
+	&"ion_blaster": [ &"die_strength" ],
+	&"seeker_array": [ &"die_intellect" ],
+	&"oxygen_siphon": [ &"passive_oxygen" ]
+}
+rotation_rules = {
+	&"ion_blaster": true,
+	&"seeker_array": true,
+	&"oxygen_siphon": true
+}
+cell_labels = []

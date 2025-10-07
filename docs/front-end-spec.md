@@ -27,6 +27,7 @@ This document defines the user experience goals, information architecture, user 
 | Date       | Version | Description                  | Author              |
 |------------|---------|------------------------------|---------------------|
 | 2025-10-02 | v0.1    | Initial UI/UX specification. | game-ux-expert (AI) |
+| 2025-10-06 | v0.2    | Equipment matrix UX updates. | game-ux-expert (AI) |
 
 ## Information Architecture (IA)
 ### Site Map / Screen Inventory
@@ -209,6 +210,21 @@ graph TD
 
 **Notes:** Equipment grid resides in right TabContainer; dice viewport remains visible across the bottom.
 
+#### Interaction Design & Feedback
+- **Placement Preview:** Grid cells glow cyan when an item mask fits; conflicting cells pulse red at 6 Hz with haptic tick on touch devices. Preview uses a pooled `ColorRect` overlay (tint `#3FF2FF44`) that follows drag ghost.
+- **Rotation:** Long-press (250 ms) opens radial mini-menu with Rotate Left/Right and Quick Remove. Keyboard/controller map to `Q/E` and bumpers. Mobile provides persistent rotate buttons below the inventory list when viewport width <1550 px.
+- **Quick Remove:** Trash action in radial menu and dedicated button in Item Details panel. Removes item, refunds burden, and returns card to inventory column with slide animation (<0.15 s).
+- **Invalid Placement:** Plays staccato synth beep (`sfx/ui/error_gear.wav`), flashes red outline (`#FF4747BF`), and bounces item back to inventory slot. Tooltip “Blocked by [cell labels]” appears for 1.5 s near origin.
+- **Dice Binding Feedback:** Valid placement of gear with dice requirements triggers highlight on matching dice slot tags in the DiceViewport (pulsing teal border). When hovering, tooltip shows “Consumes ⚪⚪ on activation; grants +2 ⚔️”.
+- **Burden Meter Response:** Meter animates increment/decrement with eased 0.18 s tween; crossing thresholds emits warning chime and banner “Overloaded: reroll costs +1 oxygen” in Context Pane.
+
+#### Accessibility Considerations
+- **Touch Targets:** Drag handles sized 64×64 px; rotate/remove buttons enlarge to 72 px when accessibility text size ≥1.2×. Hover-only affordances duplicated with on-screen buttons.
+- **Color & Contrast:** Valid preview (`#3FF2FF44`) and invalid (`#FF474744`) both exceed 3:1 against grid background. Colorblind themes swap to unique patterns (diagonal hatch for invalid).
+- **Text Scaling:** Item card labels wrap within 2 lines; when text scale >1.3×, inventory list switches to single-column vertical layout and grid reduces to 6×4 while enabling horizontal scroll.
+- **Input Mode Hints:** Bottom status strip surfaces contextual hint (“Press L1/R1 to rotate module”). Hints adapt per active input device detected via `Input.get_connected_joypads()`.
+- **Reduced Motion:** When `ui_reduce_motion` flag active, glow pulses replaced with static outline and slide animations shortened to 60 ms fade.
+
 ### Flow 5 — Post-Run Debrief & Meta Progression
 **Player Goal:** Review performance, collect rewards, and choose next step.
 
@@ -319,6 +335,7 @@ EquipmentTabPanel (HSplitContainer)
     ├── OptionButton (Filters)
     ├── ScrollContainer (ItemList)
     ├── VBoxContainer (ItemDetails)
+    ├── PanelContainer (BurdenMeter)
     └── HBoxContainer (RotateButtons)
 ```
 
@@ -329,6 +346,41 @@ EquipmentTabPanel (HSplitContainer)
 **Performance Impact:** Medium (pool nodes).
 
 **Theme Resource:** `res://themes/main_theme.tres`
+
+#### Equipment Matrix Grid
+- **Scene Path:** `res://scenes/ui/equipment_matrix.tscn`
+- **Structure:** `GridContainer` hosting 8×6 `MatrixCell` Controls; cells sized 96×96 px (mobile) / 80×80 px (desktop). Safe area padding 24 px.
+- **States:** Idle, ValidPreview, InvalidPreview, Occupied. StyleBoxes swapped via theme to avoid per-frame modulate calls.
+- **Signals:** `cell_hovered(cell: Vector2i)`, `placement_committed(instance_id: int, origin: Vector2i)`.
+- **Pooling:** Highlight overlays and drag ghost nodes pre-instanced (pool size 3) to keep drag latency <0.5 ms.
+- **Performance Notes:** Placement validation runs on typed mask arrays; update throttled to every other frame while dragging to stay under 0.2 ms.
+
+#### Equipment Item Card
+- **Scene Path:** `res://scenes/ui/equipment_item_card.tscn`
+- **Layout:** `HBoxContainer` with icon (64×64), title, dice cost badges, burden icons. Supports stacked trait tags (max 3) with auto-hide when text scale >1.3×.
+- **States:** Inventory, DragGhost, Equipped, Disabled (locked by story). DragGhost uses semi-transparent duplicate with shader for outline.
+- **Signals:** `request_rotate(module_id: String, direction: int)`, `request_remove(module_id: String)`, `hover_changed(module_id: String, is_hovering: bool)`.
+- **Dice Binding Badges:** Inline icon chips referencing `DiceViewport` colors; include mini-tooltips describing effect.
+
+#### Burden Meter & Capacity Banner
+- **Scene Path:** `res://scenes/ui/equipment_burden_meter.tscn`
+- **Display:** Horizontal progress bar with notches at Safe, Strained (+2 oxygen cost), Critical (locks new gear). Text readout `54/60 Load`.
+- **Signals:** `threshold_crossed(new_state: String)`. Connects to `ResourceLedger` to sync oxygen surcharge messaging.
+- **Accessibility:** When high contrast theme toggled, meter switches to high-con gamut `#DBFF4A / #FF3F7F`. Supports screen reader narration (“Load critical”).
+
+#### Quick Remove & Rotation Controls
+- **Radial Menu:** `PopupMenu` anchored to drag origin; options list enumerated and accepts controller navigation.
+- **Persistent Buttons:** `RotateButtons` container exposes `Rotate ↺`, `Rotate ↻`, `Remove` with tooltips and Input icons when controller active.
+- **Error Handling:** Attempting to remove quest-locked gear prompts confirmation dialog anchored to Item Details.
+
+#### Inventory Filtering
+- **Filters:** `OptionButton` toggles All / Offensive / Utility / Defensive / Quest. Each filter persists via `ConfigFile` under `ui/equipment`.
+- **Search:** Long-press on filters opens on-screen keyboard (mobile) or text field (desktop) for module name search; autofills to highlight matching card.
+
+#### Telemetry Hooks
+- **Events:** `matrix_module_equipped`, `matrix_module_removed`, `matrix_rotation`, `matrix_invalid_attempt`.
+- **Payload:** Module ID, orientation, burden delta, device input type, time since turn start. Routed through `TelemetryHub` to backend.
+- **Usage:** Supports A/B tests on onboarding prompts and balancing.
 
 ### EventResolver.tscn
 **Purpose:** Narrative choice interface triggered by rooms/events.

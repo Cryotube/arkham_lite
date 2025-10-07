@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://moduleionblaster"]
+
+[ext_resource type="Script" path="res://scripts/resources/equipment_module_resource.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+module_id = &"ion_blaster"
+display_name = "Ion Blaster"
+description = "Spend a Strength die to deal +2 damage."
+shape_mask = [ Vector2i(0, 0), Vector2i(1, 0) ]
+burden = 2
+dice_costs = [ &"die_strength" ]
+passive_slots = []
+allow_rotation = true

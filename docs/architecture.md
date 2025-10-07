@@ -10,6 +10,7 @@ No existing Godot starter, template, or prior codebase has been identified. This
 | Date | Version | Description | Author |
 | --- | --- | --- | --- |
 | 2025-10-03 | v0.1 | Initial architecture baseline capturing dice loop, room/threat systems, equipment matrix, UX alignment, and performance strategy. | Dan (game-architect) |
+| 2025-10-06 | v0.2 | Equipment matrix systems blueprint (inventory model, feedback pooling, telemetry contracts). | Dan (game-architect) |
 
 ## High Level Architecture
 ### Technical Summary
@@ -32,12 +33,16 @@ graph TD
     TurnManager --> RoomQueueService
     TurnManager --> ThreatService
     DiceSubsystem -->|signals| EquipmentController
-    EquipmentController --> ResourceLedger
+    TurnManager --> EquipmentInventoryModel
+    EquipmentController --> EquipmentInventoryModel
+    EquipmentController --> EquipmentFeedbackService
+    EquipmentInventoryModel --> ResourceLedger
     RoomQueueService --> ResourceLedger
     ThreatService --> CombatResolver
     CombatResolver --> ResourceLedger
     ResourceLedger --> HUDController
     HUDController --> SubViewportDice
+    EquipmentFeedbackService --> HUDController
     TelemetryHub -->|batch| AnalyticsBridge
     GameDirector --> TurnManager
     GameDirector --> SaveService
@@ -105,6 +110,18 @@ graph TD
 **Relationships:** Connects to `DiceFaceSetResource` for compatibility and `StatusEffectResource` for buffs/debuffs.  
 **Implementation:** GDScript Resource stored in `res://resources/equipment/`; load baseline modules at boot, stream rares post-unlock.
 
+### EquipmentMatrixConfigResource
+**Purpose:** Defines grid dimensions, burden thresholds, and dice slot bindings for the equipment matrix.  
+**Key Attributes:** `grid_width: int`, `grid_height: int`, `base_burden: int`, `thresholds: Dictionary[StringName, EquipmentBurdenThreshold]`, `slot_bindings: Dictionary[StringName, Array[StringName]]`, `rotation_rules: Dictionary[StringName, bool]`, `cell_labels: Array[StringName]`.  
+**Relationships:** Consumed by `EquipmentInventoryModel` and `EquipmentController` to validate placements and update burden/slot rules.  
+**Implementation:** GDScript Resource at `res://resources/config/equipment_matrix.tres`; hot-reloaded via config watcher for balancing.
+
+### EquipmentLoadoutResource
+**Purpose:** Persists the player’s current equipment layout within saves and previews.  
+**Key Attributes:** `placed_modules: Array[EquipmentPlacement]`, where `EquipmentPlacement` stores `module_id: StringName`, `origin: Vector2i`, `orientation: EquipmentOrientation`, `occupied_cells: PackedVector2Array`, `bound_slots: Array[StringName]`.  
+**Relationships:** Embedded within `RunStateResource` and surfaced through `EquipmentInventoryModel`.  
+**Implementation:** GDScript Resource at `res://resources/run_state/equipment_loadouts/`; serialization handled by `SaveService`.
+
 ### DiceFaceSetResource
 **Purpose:** Configures dice pools for players/threats.  
 **Key Attributes:** `set_id`, `faces`, `lock_rules`, `refresh_strategy`.  
@@ -158,6 +175,24 @@ graph TD
 **Language:** GDScript.  
 **Implementation:** `_gui_input` drag/drop, `_process` cooldown UI, pooled tooltips.
 
+### EquipmentInventoryModel
+**Responsibility:** Autoload that owns canonical equipment state, burden math, and dice slot bindings.  
+**Key Components:** `equipment_inventory_model` autoload (Node), `EquipmentMatrixConfigResource`, `EquipmentLoadoutResource`, optional `grid_packer` utility.  
+**Language:** GDScript (statically typed) for state management; exposes lightweight API consumable by UI and gameplay systems.  
+**Implementation:** Maintains occupancy bitmap (`PackedByteArray`) per grid cell, caches module masks, enforces burden thresholds, and emits `loadout_changed(loadout: EquipmentLoadoutResource)`, `burden_changed(total_burden: int, state: EquipmentBurdenState)`, `dice_binding_updated(slot: StringName, module_id: StringName)`. Interacts with `ResourceLedger` to apply burden penalties and `TelemetryHub` for equipment analytics.
+
+### EquipmentFeedbackService
+**Responsibility:** Pools audiovisual feedback (highlights, toasts, haptics) for equipment interactions.  
+**Key Components:** `equipment_feedback_service` Node (autoload under UI layer), pooled `ColorRect` overlays, `AudioStreamPlayer` instances, platform haptic bridge.  
+**Language:** GDScript (statically typed).  
+**Implementation:** Exposes `show_valid_preview(cells: PackedVector2Array)`, `show_invalid_preview(conflicts: PackedVector2Array)`, `play_action_feedback(type: EquipmentFeedbackType)`. Integrates with `HUDController` for overlay positioning and throttles haptics to 60 Hz to avoid battery drain.
+
+### GridPacker Utility (Optional)
+**Responsibility:** Performance-focused placement validator for complex module masks.  
+**Key Components:** `grid_packer` class (`res://scripts/utils/grid_packer.cs`) compiled via Godot C#.  
+**Language:** C# (partial class) with span-based iteration to avoid allocations.  
+**Implementation:** Offers `Fits(bool[,] grid, bool[,] mask, Vector2I origin)` and `Rasterize(PackedVector2Array mask)` helpers; only enabled on mobile builds that hit 0.8 ms validation ceiling, falling back to GDScript otherwise.
+
 ### ResourceLedger
 **Responsibility:** Central authority for resources (health, oxygen, materials, threat, XP).  
 **Key Components:** `resource_ledger` autoload, `resource_ledger_data` Resource, `alert_policy_resource`.  
@@ -195,7 +230,11 @@ graph TD
     TurnManager --> RoomQueueService
     TurnManager --> ThreatService
     TurnManager --> EquipmentController
-    EquipmentController --> ResourceLedger
+    TurnManager --> EquipmentInventoryModel
+    EquipmentController --> EquipmentInventoryModel
+    EquipmentController --> EquipmentFeedbackService
+    EquipmentInventoryModel --> ResourceLedger
+    EquipmentInventoryModel --> TelemetryHub
     RoomQueueService --> ResourceLedger
     ThreatService --> ResourceLedger
     ResourceLedger --> HUDController
@@ -214,9 +253,9 @@ graph TD
 **Game State Flow:** `Idle → Roll Prep → Dice Resolution → Player Action Resolution → Threat Resolution → Resource Update → Victory/Defeat Check → Next Turn/Run Summary`.
 
 ### Gameplay Component Architecture
-- **Player Controller Components:** `TurnManager`, `PlayerHandController`, `EquipmentController` – GDScript.  
-- **Game Logic Components:** `DiceSubsystem`, `RoomQueueService`, `ThreatService` – all statically typed GDScript modules.  
-- **Interaction Systems:** `HUDController`, `TutorialService`, `TelemetryHub` – signal flow `TurnManager → DiceSubsystem → TurnManager` and `TurnManager → RoomQueueService/ThreatService → ResourceLedger → HUDController`.  
+- **Player Controller Components:** `TurnManager`, `PlayerHandController`, `EquipmentController`, `EquipmentInventoryModel` – statically typed GDScript orchestrating player choices and loadout state.  
+- **Game Logic Components:** `DiceSubsystem`, `RoomQueueService`, `ThreatService`, optional `GridPacker` helper – all statically typed modules focused on deterministic calculations.  
+- **Interaction Systems:** `HUDController`, `TutorialService`, `TelemetryHub`, `EquipmentFeedbackService` – signal flow `TurnManager → DiceSubsystem → TurnManager` and `TurnManager → RoomQueueService/ThreatService/EquipmentInventoryModel → ResourceLedger → HUDController`.  
 - **Performance Targets:** 60+ FPS (≤16.67 ms frame time) with spikes capped <4 ms.
 
 ## Node Architecture Details
@@ -229,6 +268,7 @@ graph TD
 ### Resource Architecture
 - **Data Architecture:** Custom Resources under `res://resources/<domain>/` with `ResourceUID` references for cross-links.  
 - **Configuration Management:** Global tunables stored in `res://config/game_balance.tres`; environment overrides via JSON loaded at startup.  
+- **Equipment Resources:** `res://resources/config/equipment_matrix.tres` (matrix config) consumed by `EquipmentInventoryModel`, and `res://resources/run_state/equipment_loadouts/` (player layouts) serialized within `RunStateResource`.  
 - **Runtime Resources:** Transient state created by factories in SaveService; runtime caches kept in memory only.  
 - **Loading Strategy:** Preload frequently used content (baseline decks, threats, equipment); stream optional packs with threaded loader during downtime.
 
@@ -580,9 +620,9 @@ res://
 - Performance Tests: Automated FPS harness validating 60+ FPS.
 
 ### Godot Test Types and Organization
-- **GDScript Tests (GUT):** Located in `res://tests/gut/`; cover TurnManager, RoomQueueService, ResourceLedger, tutorials; use fixtures and doubles.  
-- **Performance Harness:** Located in `res://tests/perf/`; drives automated dice-roll stress cases and telemetry batching checks via headless Godot.  
-- **Test Data Management:** Fixtures stored in `res://tests/fixtures/`; test scenes under `res://tests/scenes/`; signal testing via GUT doubles; performance validation through automated run loops.
+- **GDScript Tests (GUT):** Located in `res://tests/gut/`; cover TurnManager, RoomQueueService, ResourceLedger, tutorials, EquipmentController, and EquipmentInventoryModel (placement, burden math, slot bindings); use fixtures and doubles.  
+- **Performance Harness:** Located in `res://tests/perf/`; drives automated dice-roll stress cases, equipment drag/rotate benchmarks (<0.8 ms validation), and telemetry batching checks via headless Godot.  
+- **Test Data Management:** Fixtures stored in `res://tests/fixtures/`; test scenes under `res://tests/scenes/`; includes reusable equipment loadout masks and matrix configs; signal testing via GUT doubles; performance validation through automated run loops.
 
 ## Performance and Security Considerations
 ### Save Data Security
@@ -612,5 +652,5 @@ res://
 
 ### Game Developer Prompt
 """
-Set up the Godot 4.5 project using the structure in `docs/architecture.md`. Implement the TurnManager, DiceSubsystem, RoomQueueService, ThreatService, EquipmentController, and ResourceLedger following the signal flows defined in the architecture. Use statically typed GDScript for every subsystem—including dice physics, combat math, serialization, and telemetry—and enforce object pooling for dice, particles, and threat visuals. Write GUT specs and performance harness cases before implementation (TDD) and ensure the dice roll loop sustains 60+ FPS on a Pixel 6/iPhone 13 using the profiling harness. Respect the approved coding standards and resource-driven content patterns.
+Set up the Godot 4.5 project using the structure in `docs/architecture.md`. Implement the TurnManager, DiceSubsystem, RoomQueueService, ThreatService, EquipmentController, EquipmentInventoryModel (autoload), EquipmentFeedbackService, and ResourceLedger following the signal flows defined in the architecture. Use statically typed GDScript for every subsystem—including dice physics, combat math, serialization, telemetry, and equipment placement validation—and enforce object pooling for dice, particles, threat visuals, and equipment overlays. If placement validation hits the 0.8 ms ceiling, integrate the optional `GridPacker` C# helper with accompanying unit tests. Write GUT specs and performance harness cases before implementation (TDD) and ensure the dice roll loop and equipment interactions sustain 60+ FPS on a Pixel 6/iPhone 13 using the profiling harness. Respect the approved coding standards and resource-driven content patterns.
 """

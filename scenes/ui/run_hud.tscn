@@ -110,10 +110,14 @@ separation = 8
 alignment = 1
 separation = 12
 
-[node name="RotationLabel" type="Label" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Toolbar"]
-text = "Rotation"
+[node name="RotateLeftButton" type="Button" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Toolbar"]
+text = "Rotate ↺"
 
-[node name="RotationOption" type="OptionButton" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Toolbar"]
+[node name="RotateRightButton" type="Button" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Toolbar"]
+text = "Rotate ↻"
+
+[node name="RemoveButton" type="Button" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Toolbar"]
+text = "Remove"
 
 [node name="ClearButton" type="Button" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Toolbar"]
 text = "Clear Installed"
@@ -144,6 +148,27 @@ separation = 6
 
 [node name="InventoryHeader" type="Label" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel"]
 text = "Carried Equipment"
+
+[node name="BurdenPanel" type="HBoxContainer" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel"]
+size_flags_horizontal = 3
+alignment = 1
+separation = 8
+
+[node name="BurdenProgress" type="ProgressBar" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel/BurdenPanel"]
+size_flags_horizontal = 3
+max_value = 12.0
+value = 0.0
+
+[node name="BurdenValue" type="Label" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel/BurdenPanel"]
+text = "0 load"
+
+[node name="BurdenState" type="Label" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel/BurdenPanel"]
+text = "Safe"
+
+[node name="HintLabel" type="Label" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel"]
+size_flags_horizontal = 3
+autowrap_mode = 1
+text = "Select equipment to preview placement."
 
 [node name="InventoryScroll" type="ScrollContainer" parent="MainLayout/MainBody/RightColumn/TabContainer/Equipment/Content/InventoryPanel"]
 size_flags_horizontal = 3
