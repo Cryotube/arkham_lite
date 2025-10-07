@@ -18,6 +18,7 @@ var _cached_results: Array[int] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _faces: Array[int] = [1, 2, 3, 4, 5, 6]
 var _initialized: bool = false
+var _pool_cache_ref: Node = null
 
 func _ready() -> void:
     _rng.randomize()
@@ -35,7 +36,7 @@ func _load_faces() -> void:
 
 func _initialize_pool() -> void:
     _dice_states.clear()
-    var templates := DicePoolCache.ensure_pool(DICE_POOL_SIZE)
+    var templates := _ensure_pool_templates()
     for index in DICE_POOL_SIZE:
         var state := DieState.new()
         if index < templates.size():
@@ -120,10 +121,22 @@ func reset() -> void:
         state.value = 1
     _cached_results = [1, 1, 1]
 
+func _ensure_pool_templates() -> Array[Dictionary]:
+    if _pool_cache_ref == null or not is_instance_valid(_pool_cache_ref):
+        _pool_cache_ref = _find_pool_cache()
+    if _pool_cache_ref and _pool_cache_ref.has_method("ensure_pool"):
+        return _pool_cache_ref.ensure_pool(DICE_POOL_SIZE)
+    return []
+
+func _find_pool_cache() -> Node:
+    var tree := get_tree()
+    if tree and tree.get_root().has_node("DicePoolCache"):
+        return tree.get_root().get_node("DicePoolCache")
+    return null
+
 func _is_valid_index(index: int) -> bool:
     return index >= 0 and index < _dice_states.size()
 
 func _ensure_initialized() -> void:
     if _dice_states.is_empty():
         _initialize_pool()
-

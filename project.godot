@@ -16,6 +16,13 @@ TurnManagerSingleton="*res://scripts/systems/turn_manager.gd"
 DicePoolCache="*res://scripts/systems/dice_pool_cache.gd"
 SaveService="*res://scripts/services/save_service_stub.gd"
 ResourceLedger="*res://scripts/autoload/resource_ledger.gd"
+RoomQueueService="*res://scripts/services/room_queue_service.gd"
+ThreatService="*res://scripts/services/threat_service.gd"
+EventResolver="*res://scripts/services/event_resolver.gd"
+EquipmentInventoryModel="*res://scripts/services/equipment_inventory_model.gd"
+LootService="*res://scripts/services/loot_service.gd"
+TelemetryHub="*res://scripts/services/telemetry_hub.gd"
+TutorialService="*res://scripts/services/tutorial_service.gd"
 
 [input]
 roll_dice={

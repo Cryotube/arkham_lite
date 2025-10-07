@@ -30,9 +30,11 @@ var _threat_warning_threshold: float = 0.6
 var _threat_critical_threshold: float = 0.85
 
 var _save_service: Node = null
+var _telemetry_hub: Node = null
 
 func _ready() -> void:
 	_resolve_save_service()
+	_resolve_telemetry()
 	var service = _save_service_stub()
 	if service and service.has_method("has_run_snapshot") and service.has_run_snapshot():
 		_apply_snapshot(service.get_run_snapshot())
@@ -67,6 +69,7 @@ func set_health(value: int) -> void:
 	health_changed.emit(_health, max_health)
 	_update_threshold_state("health", _health, max_health)
 	_persist_state()
+	_record_telemetry("health_updated", {"current": _health, "max": max_health})
 
 func adjust_health(delta: int) -> void:
 	set_health(_health + delta)
@@ -80,6 +83,7 @@ func set_materials(value: int) -> void:
 	materials_changed.emit(_materials, max_materials)
 	_update_threshold_state("materials", _materials, max_materials)
 	_persist_state()
+	_record_telemetry("materials_updated", {"current": _materials, "max": max_materials})
 
 func adjust_materials(delta: int) -> void:
 	set_materials(_materials + delta)
@@ -93,6 +97,7 @@ func set_oxygen(value: int) -> void:
 	oxygen_changed.emit(_oxygen, max_oxygen)
 	_update_threshold_state("oxygen", _oxygen, max_oxygen)
 	_persist_state()
+	_record_telemetry("oxygen_updated", {"current": _oxygen, "max": max_oxygen})
 
 func adjust_oxygen(delta: int) -> void:
 	set_oxygen(_oxygen + delta)
@@ -110,6 +115,7 @@ func set_threat(value: int) -> void:
 	if current_state != previous_state:
 		threat_threshold_crossed.emit(current_state)
 	_persist_state()
+	_record_telemetry("threat_updated", {"current": _threat, "max": max_threat, "state": current_state})
 
 func adjust_threat(delta: int) -> void:
 	set_threat(_threat + delta)
@@ -124,6 +130,7 @@ func apply_roll_outcome(results: Array[int]) -> void:
 		adjust_materials(earned_materials / 3)
 	adjust_oxygen(-1)
 	adjust_threat(1)
+	_record_telemetry("roll_outcome", {"results": results, "materials_gain": earned_materials / 3})
 
 func get_snapshot() -> Dictionary:
 	return {
@@ -184,6 +191,7 @@ func _persist_state() -> void:
 	var service = _save_service_stub()
 	if service and service.has_method("store_run_snapshot"):
 		service.store_run_snapshot(get_snapshot())
+	_record_telemetry("ledger_snapshot", get_snapshot())
 
 func _resolve_save_service() -> void:
 	if _save_service != null:
@@ -195,5 +203,17 @@ func _resolve_save_service() -> void:
 	if root and root.has_node("SaveService"):
 		_save_service = root.get_node("SaveService")
 
+func _resolve_telemetry() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	var root := tree.get_root()
+	if root and root.has_node("TelemetryHub"):
+		_telemetry_hub = root.get_node("TelemetryHub")
+
 func _save_service_stub():
 	return _save_service
+
+func _record_telemetry(event_name: String, payload: Dictionary) -> void:
+	if _telemetry_hub != null and _telemetry_hub.has_method("record"):
+		_telemetry_hub.record(event_name, payload)
