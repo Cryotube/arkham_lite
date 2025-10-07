@@ -1,0 +1,87 @@
+[gd_scene load_steps=6 format=3 uid="uid://resource_panel"]
+
+[ext_resource type="Script" path="res://scripts/ui/resource_panel_controller.gd" id="1"]
+[ext_resource type="Theme" path="res://resources/ui/resource_meter_theme.tres" id="2"]
+[ext_resource type="Resource" path="res://resources/config/resource_thresholds.tres" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/threat_meter.tscn" id="4"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.070588, 0.094118, 0.121569, 0.88)
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+expand_margin_left = 4.0
+expand_margin_right = 4.0
+expand_margin_top = 4.0
+expand_margin_bottom = 4.0
+
+[node name="ResourcePanel" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 120)
+theme = ExtResource("2")
+theme_override_styles/panel = SubResource("1")
+anchors_preset = 10
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+size_flags_horizontal = 3
+size_flags_vertical = 1
+script = ExtResource("1")
+thresholds_resource = ExtResource("3")
+
+[node name="HealthMeter" type="VBoxContainer" parent="."]
+size_flags_horizontal = 3
+
+[node name="HealthTitleLabel" type="Label" parent="HealthMeter"]
+text = "Health"
+horizontal_alignment = 1
+
+[node name="HealthProgressBar" type="ProgressBar" parent="HealthMeter"]
+name = "HealthProgressBar"
+size_flags_horizontal = 3
+size_flags_vertical = 3
+max_value = 8.0
+
+[node name="HealthValueLabel" type="Label" parent="HealthMeter"]
+name = "HealthValueLabel"
+text = "0 / 0"
+horizontal_alignment = 1
+
+[node name="MaterialsMeter" type="VBoxContainer" parent="."]
+size_flags_horizontal = 3
+
+[node name="MaterialsTitleLabel" type="Label" parent="MaterialsMeter"]
+text = "Materials"
+horizontal_alignment = 1
+
+[node name="MaterialsProgressBar" type="ProgressBar" parent="MaterialsMeter"]
+name = "MaterialsProgressBar"
+size_flags_horizontal = 3
+size_flags_vertical = 3
+max_value = 12.0
+
+[node name="MaterialsValueLabel" type="Label" parent="MaterialsMeter"]
+name = "MaterialsValueLabel"
+text = "0 / 0"
+horizontal_alignment = 1
+
+[node name="OxygenMeter" type="VBoxContainer" parent="."]
+size_flags_horizontal = 3
+
+[node name="OxygenTitleLabel" type="Label" parent="OxygenMeter"]
+text = "Oxygen"
+horizontal_alignment = 1
+
+[node name="OxygenProgressBar" type="ProgressBar" parent="OxygenMeter"]
+name = "OxygenProgressBar"
+size_flags_horizontal = 3
+size_flags_vertical = 3
+max_value = 6.0
+
+[node name="OxygenValueLabel" type="Label" parent="OxygenMeter"]
+name = "OxygenValueLabel"
+text = "0 / 0"
+horizontal_alignment = 1
+
+[node name="ThreatMeter" parent="." instance=ExtResource("4")]

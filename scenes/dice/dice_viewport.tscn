@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://diceviewport"]
+
+[ext_resource type="Script" path="res://scripts/systems/dice_subsystem.gd" id="1"]
+
+[node name="DiceViewportContainer" type="SubViewportContainer"]
+stretch = true
+size = Vector2(640, 360)
+
+[node name="DiceViewport" type="SubViewport" parent="."]
+size = Vector2i(640, 360)
+audio_listener_enable_3d = true
+msaa_3d = 1
+
+top_level = true
+transparent_bg = true
+
+[node name="DiceRoot" type="Node3D" parent="DiceViewport"]
+script = ExtResource("1")
+
+[node name="Camera3D" type="Camera3D" parent="DiceViewport/DiceRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 6)
+current = true
+fov = 55.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DiceViewport/DiceRoot"]
+transform = Transform3D(0.766, -0.356, 0.536, 0.43, 0.902, -0.042, -0.479, 0.244, 0.844, 0, 3, 0)
+light_energy = 1.2

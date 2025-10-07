@@ -18,9 +18,36 @@ Bermuda Sector follows a stranded spacefarer trying to escape a derelict station
 Threats emerge from rooms and latch onto the player, much like Arkham Horror, Aeon’s End, or Marvel Champions. Latched threats operate on their own timer: at fixed intervals they roll their own dice to inflict damage or negative effects. Players respond by either whittling the threat down through combat—spending attack symbols to destroy it, reduce global threat, and earn experience—or by executing evasions that demand specific symbol sets, typically agility-oriented. Combat decisions feed directly into the Resident Evil–style equipment matrix; modules in the inventory grid consume dice to unleash attacks, convert symbols, mint temporary dice, gather resources, or trigger exploratory gambits. Every choice balances dwindling health, scavenged materials, and limited oxygen reserves against the rising threat meter that governs forced encounters. Targeting mobile dungeon-crawl fans, the game emphasizes short, replayable sessions blending calculated risk, clue hunting, and relentless threat pressure, all built in Godot 4.5 for iOS and Android landscape play.
 
 ### Change Log
-| Date       | Version | Description                                                                                                             | Author      |
-|------------|---------|-------------------------------------------------------------------------------------------------------------------------|-------------|
-| 2025-10-02 | v0.1    | Initial PRD skeleton draft; documented dice loop, room queue/clue system, threat latching combat, equipment matrix, oxygen. | game-pm (AI) |
+| Date       | Version | Description                                                                                                             | Author           |
+|------------|---------|-------------------------------------------------------------------------------------------------------------------------|------------------|
+| 2025-10-05 | v0.2    | Added problem statement, player personas, KPIs, MVP validation plan, NFRs, risk register, timeline, and post-launch strategy. | Codex (game-po)  |
+| 2025-10-02 | v0.1    | Initial PRD skeleton draft; documented dice loop, room queue/clue system, threat latching combat, equipment matrix, oxygen. | game-pm (AI)     |
+
+## Problem Statement & Opportunity
+- Mobile roguelike fans lack a tense, session-length friendly experience that blends dice-driven tactics with Arkham Horror style threat escalation.
+- Existing board game conversions skew toward premium price points or heavy UX, leaving a gap for a focused mobile-first experience with short runs.
+- Bermuda Sector positions itself as a premium $4.99 launch with optional cosmetic expansions, targeting players who enjoy calculated risk and strategic loadout planning.
+
+## Player Personas & Motivations
+- **Persona A: Tactician on the Go** – Age 28-40, plays Marvel Snap, Slay the Spire, and Dicey Dungeons. Motivated by quick yet deep sessions during commutes. Seeks meaningful choices each turn and transparent odds. Expects polished UX on modern phones and controller optionality.
+- **Persona B: Atmospheric Story Seeker** – Age 24-38, enjoys Arkham Horror, Into the Breach, and narrative roguelikes. Values ambience, lore snippets, and steady progression between runs. Looks for mobile games that respect her time and provide accessibility toggles.
+
+## Success Metrics & KPIs
+- Launch KPI targets: D1 retention >= 35%, D7 >= 15%, average session length 8-12 minutes, 3 runs per day within first week.
+- Monetization targets: 8% cosmetic attachment rate within 90 days, breakeven with 30k paid downloads.
+- Quality targets: Apple App Store and Google Play rating >= 4.5, crash-free sessions >= 98%, average frame time <= 16.67 ms on reference devices (A13, Snapdragon 765G).
+
+## MVP Scope & Validation Plan
+- MVP includes: dice roll core loop, resource ledger, room queue with 12 baseline rooms, single threat archetype with latching behavior, basic equipment matrix with starter gear, tutorialized first run, analytics + crash reporting, iOS/Android exports.
+- Deferred to post-MVP: remote config tuning, multiple threat archetypes, seasonal live ops, advanced accessibility suite, controller UX polish.
+- Validation: closed alpha with 50 players sourced from roguelike communities, instrumented telemetry dashboards tracking run length, failure reasons, tutorial drop-off.
+- Success exit criteria: 3 consecutive builds meeting KPI proxies (>=10 runs/user, average frame time within budget, tutorial completion >= 70%) and qualitative feedback highlighting tension satisfaction.
+
+## Research & Assumptions
+- Competitive scan (Luckitown, Dicey Dungeons, Tainted Grail) indicates appetite for dice tactics but gaps in sci-fi horror theme.
+- Players accept premium pricing when content depth justifies; plan for no gacha or stamina mechanics to maintain trust.
+- Assume single-player offline is sufficient for MVP; online leaderboards considered later.
+- Localization limited to English at launch; architecture must remain localization-ready for expansion.
 
 ## Requirements
 
@@ -35,13 +62,15 @@ Threats emerge from rooms and latch onto the player, much like Arkham Horror, Ae
 - FR8: Support action economy mechanics that let players spend limited actions/time to reroll selected dice, cycle the room queue, or trigger equipment abilities, with appropriate penalties for inaction.
 - FR9: Render dice rolls within a 3D viewport embedded atop the 2D HUD, allowing drag-and-drop placement of rolled dice into a lock area, and highlight dice slated for exhaustion with a shader-driven edge glow when confirming actions.
 
-### Non Functional
-- NFR1: Maintain a steady 60 FPS on mid-range iOS and Android devices (e.g., Apple A13, Snapdragon 765G) in landscape orientation.
-- NFR2: Ensure all gameplay interactions are touch-first, readable, and operable with minimal gestures for mobile landscape play.
-- NFR3: Deliver core run completion times of 5–12 minutes, including onboarding, so sessions fit into short mobile play windows.
-- NFR4: Provide high-contrast UI elements and scalable typography so critical information remains legible in varying ambient light.
-- NFR5: Allow full offline play; no network connection should be required after initial install.
-- NFR6: Keep cold-start load times under 8 seconds on target devices and under 2 seconds when resuming from background.
+### Non-Functional Requirements
+- NFR1: Maintain a steady 60 FPS on mid-range iOS and Android devices (Apple A13, Snapdragon 765G) in landscape orientation even during dice physics spikes.
+- NFR2: Keep cold-start load times under 8 seconds and resume-from-background under 2 seconds on reference devices.
+- NFR3: Preserve crash-free sessions above 98% with health metrics reported through Sentry.
+- NFR4: Provide high-contrast UI elements, scalable typography (up to 140%), and color-blind friendly palettes for key symbols.
+- NFR5: Ensure all interactions remain touch-first, with optional controller parity tracked as a backlog item.
+- NFR6: Allow uninterrupted offline play for core loop; analytics batches must gracefully queue until connectivity returns.
+- NFR7: Keep battery consumption under 12% per 30-minute session on reference devices through pooling and frame budget monitoring.
+- NFR8: Conform to GDPR/CCPA requirements by supporting opt-in analytics and secure local storage encryption.
 
 ## Game UI/UX Design Goals
 
@@ -86,7 +115,7 @@ Threats emerge from rooms and latch onto the player, much like Arkham Horror, Ae
 ### Game Architecture
 - Single-player, offline-focused roguelike with no real-time networking.
 - 2D tile/room-based presentation using Godot 4’s 2D renderer plus lightweight 3D lighting overlays for atmosphere (_assumption to confirm_).
-- Primary scripting in GDScript for rapid iteration; isolated performance-critical systems (dice simulation, loot tables) may use C# or GDExtension if profiling reveals bottlenecks.
+- Primary scripting in statically typed GDScript for rapid iteration, covering all gameplay, systems, and tooling to avoid cross-language overhead.
 
 ### Testing & QA Requirements
 - Manual playtesting loops for balance, dice odds, and UX friction on key devices (A13, Snapdragon 765G).
@@ -297,53 +326,45 @@ so that we can respond quickly to player behavior.
 3. Add crash/error reporting tied to gameplay context (room, threat, dice state).
 4. Prepare live ops dashboard prototype with data summaries for the first soft launch.
 
-## Checklist Results Report
-**Executive Summary**
-- Overall PRD completeness sits around 55%; strong mechanics detail but sparse market/problem framing.
-- MVP scope currently feels too large—later epics bundle polish/live ops that can slide until core loop validated.
-- Readiness for architecture phase: Needs additional context before hand-off (Not Ready).
-- Critical gaps: missing problem statement & metrics, unclear MVP validation plan, no data/integration guidance, stakeholder alignment absent.
+## Data & Telemetry Requirements
+- Instrument core loop events: dice roll outcomes, threat triggers, room choices, equipment activations, resource deltas, tutorial progression, run completion.
+- Batch telemetry through `TelemetryHub` every 10 events or 15 seconds, with offline queueing and retry backoff.
+- Capture anonymized device info (OS, GPU tier) to compare performance against FPS targets.
+- Store analytics in OpenGameAnalytics with dashboards highlighting funnel drop-offs and failure causes.
+- Collect qualitative feedback at end of runs during alpha/beta builds via optional prompt.
 
-**Category Analysis**
-| Category                         | Status  | Critical Issues |
-| -------------------------------- | ------- | --------------- |
-| 1. Problem Definition & Context  | FAIL    | No quantified problem, business goals, or research evidence. |
-| 2. MVP Scope Definition          | FAIL    | No MVP validation plan, scope boundaries, or success criteria. |
-| 3. User Experience Requirements  | PARTIAL | Lacks user flows and error handling scenarios. |
-| 4. Functional Requirements       | PASS    | — |
-| 5. Non-Functional Requirements   | PARTIAL | Missing resilience/security targets and telemetry expectations. |
-| 6. Epic & Story Structure        | PARTIAL | No timeline/dependency view for epics. |
-| 7. Technical Guidance            | PARTIAL | Deployment/monitoring guidance and risk register not defined. |
-| 8. Cross-Functional Requirements | FAIL    | Data, integration, and operational requirements absent. |
-| 9. Clarity & Communication       | PARTIAL | Stakeholder map and communication plan missing. |
+## Platform & Deployment Plan
+- Export templates: Godot 4.5 official iOS/Android; maintain nightly smoke export pipeline.
+- CI/CD: GitHub Actions (macOS + Linux) running unit tests, GUT suites, and performance harness via `scripts/godot-cli.sh`.
+- Distribution path: Internal QA -> Closed Alpha (TestFlight/Play Console) -> Soft Launch (Canada, Australia) -> Global release.
+- Compliance: App Store privacy nutrition labels, Google data safety declarations, COPPA inapplicable (13+ rating).
+- Support workflow: Crash and telemetry alerts piped to Slack channel with on-call rotation.
 
-**Top Issues by Priority**
-- BLOCKERS: Define problem statement, target metrics, and user research insight; outline MVP validation plan and success criteria; specify data/integration requirements or confirm N/A.
-- HIGH: Document out-of-scope items and future enhancements; capture primary user flows with error states; add deployment/monitoring expectations and technical risks.
-- MEDIUM: Summarize stakeholder alignment & communication cadence; expand non-functional requirements for reliability/security.
-- LOW: Consider diagrams/visuals for room queue and dice lifecycle.
+## Risk Register
+| Risk | Probability | Impact | Mitigation | Owner |
+| ---- | ----------- | ------ | ---------- | ----- |
+| 3D dice performance spikes on mobile | Medium | High | Implement aggressive pooling, limit dice count per roll, measure on target hardware each sprint | Tech Lead |
+| Godot 4.5 regressions or plugin instability | Medium | Medium | Pin engine to 4.5.0, keep 4.4 branch fallback, vet plugins and maintain upgrade checklists | Tech Lead |
+| Content fatigue due to limited room/threat variety at launch | Medium | Medium | Build modular room/threat authoring pipeline, prioritize additional packs for first update | Design Lead |
+| UX overwhelm on small screens | Low | High | Enforce HUD usability heuristics, run early usability tests with 7" devices | UX Lead |
+| Analytics opt-out leaves gaps in balancing data | Low | Medium | Pair telemetry with qualitative surveys and manual playtest logs | Product |
 
-**MVP Scope Assessment**
-- Candidate cuts: Epic 4 polish/live ops items until core loop validated; defer remote config until analytics strategy approved.
-- Essential additions: MVP validation plan with target metrics and research loop; explicit definition of victory/failure metrics.
-- Complexity concerns: 3D dice rendering atop 2D HUD and equipment grid may stretch initial timeline—flag for architect.
-- Timeline realism: Reassess once core scope trimmed and validation path set.
+## Team & Timeline
+- Core team: 2 Godot engineers (GDScript), 1 technical designer/content author, 1 UX/visual designer, 0.5 QA contractor, part-time composer/sound designer.
+- Phases & estimates:
+  - Prototype (6 weeks): establish dice loop, room queue, threat skeleton, baseline HUD.
+  - Vertical Slice (8 weeks): implement equipment matrix MVP, resource ledger, first threat archetype, tutorial stub.
+  - Content Expansion (10 weeks): expand rooms to 30 cards, add threat variants, integrate analytics, refine UX.
+  - Soft Launch Prep (6 weeks): polish, localization scaffolding, platform compliance, live ops hooks, marketing assets.
+- Milestones reviewed bi-weekly with burn-up charts tracking story completion vs scope.
 
-**Technical Readiness**
-- Technical constraints mostly captured, but confirm 2D + light 3D overlay approach and document performance budgets per feature.
-- Risks: Godot 4.5 stability on mobile, 3D dice rendering cost, absence of monitoring/analytics plan.
-- Needs architect input on data model, save encryption strategy, and plugin selection vetting.
+## Post-Launch Strategy
+- First 30 days: monitor telemetry, hotfix critical crashes, release balance patch adjusting rooms/threat timers per data.
+- 60-90 days: introduce new dice faces, equipment modules, and room pack DLC; enable seasonal challenge rotation.
+- Long term: evaluate controller support, additional languages, and PC/console ports depending on traction.
+- Live ops cadence: monthly anomaly events, quarterly expansion packs tied to new threat factions.
 
-**Recommendations**
-- Draft concise problem statement, business goals, and measurable success metrics tied to mobile retention/monetization assumptions.
-- Produce lightweight user research summary or assumptions + validation plan; identify primary persona.
-- Add MVP validation & telemetry strategy (playtests, metrics, timelines).
-- Document data structures (resources, rooms, threats, equipment) and confirm external integration needs.
-- Outline deployment/monitoring/support expectations for soft launch.
-
-**Final Decision:** NEEDS REFINEMENT before architect engagement.
-
-## Next Steps
-
-### Game Architect Prompt
-Architect, review `docs/game-prd.md` with emphasis on the dice engine, room queue, and equipment matrix. Validate feasibility of the hybrid 2D HUD with 3D dice viewport, confirm assumptions around optional 3D lighting overlays, and outline a Godot 4.5-friendly architecture that balances mobile performance with modular content updates. Highlight any additional technical risks or dependencies that Product must address.
+## Outstanding Questions
+- Confirm pricing and monetization messaging for store listings; align with marketing assets timeline.
+- Determine whether to add optional cloud save integration for launch or defer to live ops phase.
+- Validate legal review for storing hashed device IDs and telemetry retention policy.

@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://threat_meter"]
+
+[ext_resource type="Script" path="res://scripts/ui/threat_meter_controller.gd" id="1"]
+
+[node name="ThreatMeter" type="VBoxContainer"]
+script = ExtResource("1")
+size_flags_horizontal = 3
+
+[node name="ThreatTitleLabel" type="Label" parent="."]
+text = "Threat"
+horizontal_alignment = 1
+
+[node name="ThreatProgressBar" type="ProgressBar" parent="."]
+name = "ThreatProgressBar"
+size_flags_horizontal = 3
+size_flags_vertical = 3
+max_value = 100.0
+
+[node name="ThreatValueLabel" type="Label" parent="."]
+name = "ThreatValueLabel"
+text = "0 / 0"
+horizontal_alignment = 1
+
+[node name="ThreatStatusLabel" type="Label" parent="."]
+name = "ThreatStatusLabel"
+text = "Threat: Stable"
+horizontal_alignment = 1

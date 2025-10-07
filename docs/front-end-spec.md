@@ -732,7 +732,7 @@ PostRunDebrief (Control)
 
 **Update Optimization:** Drive updates via signals; batch stat changes per frame; limit shader toggles to state changes.
 
-**Language Choice:** GDScript for UI; evaluate C# only if equipment operations profile poorly.
+**Language Choice:** Statically typed GDScript for UI and supporting helpers; optimize via typed arrays and pooled data structures before considering engine-level changes.
 
 ## Godot UI Implementation Guide
 ### UI Scene Organization
@@ -758,7 +758,7 @@ res://
 │       └── confirmation_dialog.tscn
 ```
 
-**Script Organization:** GDScript with static typing for UI logic; reserve C# for potential heavy inventory simulation. Autoload `ui/ui_manager.gd` for scene routing, theme swaps, and signal coordination.
+**Script Organization:** Statically typed GDScript for all UI logic and inventory systems. Autoload `ui/ui_manager.gd` for scene routing, theme swaps, and signal coordination.
 
 ### Theme Resource Setup
 - Base Theme: `res://themes/base_theme.tres`
@@ -787,7 +787,7 @@ res://
 - [ ] Anchor presets documented
 - [ ] 60+ FPS performance validated
 - [ ] GUT test coverage planned
-- [ ] Language strategy decided (GDScript vs C#)
+- [ ] Language strategy confirmed (typed GDScript only)
 - [ ] Accessibility features implemented
 - [ ] Touch controls configured
 

@@ -8,23 +8,20 @@ markdownExploder: true
 qa:
   qaLocation: docs/qa
 prd:
-  prdFile: docs/prd.md
-  prdVersion: v4
-  prdSharded: true
-  prdShardedLocation: docs/prd
+  prdFile: docs/game-prd.md
+  prdVersion: v0.2
+  prdSharded: false
+  prdShardedLocation: null
   epicFilePattern: epic-{n}*.md
 architecture:
   architectureFile: docs/architecture.md
-  architectureVersion: v4
-  architectureSharded: true
-  architectureShardedLocation: docs/architecture
+  architectureVersion: v0.1
+  architectureSharded: false
+  architectureShardedLocation: null
 customTechnicalDocuments: null
 devLoadAlwaysFiles:
-  - docs/architecture/coding-standards.md
-  - docs/architecture/tech-stack.md
-  - docs/architecture/source-tree.md
-  - docs/architecture/testing-strategy-and-standards.md
+  - docs/architecture.md
 qaLoadAlwaysFiles:
-  - docs/architecture/testing-strategy-and-standards.md
+  - docs/architecture.md
 devDebugLog: .ai/debug-log.md
 devStoryLocation: docs/stories

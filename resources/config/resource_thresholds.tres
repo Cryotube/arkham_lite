@@ -1,0 +1,14 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://resource_thresholds"]
+
+[ext_resource type="Script" path="res://scripts/resources/resource_thresholds.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+health_warning = 0.5
+health_critical = 0.25
+materials_warning = 0.4
+materials_critical = 0.2
+oxygen_warning = 0.5
+oxygen_critical = 0.25
+threat_warning = 0.6
+threat_critical = 0.85
