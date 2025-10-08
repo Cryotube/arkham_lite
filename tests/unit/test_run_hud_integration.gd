@@ -26,7 +26,8 @@ func test_turn_cycle_updates_ledger_and_hud_display() -> void:
 	turn_manager.start_new_run()
 	await wait_for_frames(1)
 	turn_manager.request_roll()
-	await wait_for_frames(2)
+	await dice_subsystem.roll_resolved
+	await wait_for_frames(1)
 	var results := turn_manager.get_current_results()
 	assert_eq(results.size(), 3)
 	turn_manager.commit_dice()

@@ -6,3 +6,11 @@ res://scripts/ui/run_hud_controller.gd
 res://scripts/systems/turn_manager.gd
 res://scripts/dice/die_controller.gd
 res://scripts/ui/die_token.gd
+res://scripts/autoload/resource_ledger.gd
+res://scripts/services/save_service_stub.gd
+res://tests/unit/test_resource_ledger.gd
+res://tests/unit/test_resource_panel_controller.gd
+res://scripts/ui/context_action_popup.gd
+res://scripts/ui/dice_lock_slot.gd
+res://scripts/ui/dice_token_shelf.gd
+res://tests/unit/test_turn_manager.gd

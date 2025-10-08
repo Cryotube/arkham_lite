@@ -8,6 +8,7 @@ enum TurnState { IDLE, ROLL_PREP, ROLLING, ACTION, RESOLUTION }
 signal turn_started(state: TurnState)
 signal dice_committed(results: Array[int])
 signal dice_locked_changed(locked_indices: Array[int])
+signal dice_hold_changed(held_indices: Array[int])
 signal turn_completed
 signal room_entered(room: Dictionary)
 signal room_cycled(room: Dictionary)
@@ -27,6 +28,7 @@ var _hud_controller = null
 var _state: TurnState = TurnState.IDLE
 var _current_results: Array[int] = []
 var _exhausted_indices: Array[int] = []
+var _held_indices: Array[int] = []
 var _room_service: Node = null
 var _threat_service: Node = null
 var _event_resolver: Node = null
@@ -82,6 +84,8 @@ func initialize(dice_subsystem, hud_controller) -> void:
 		_dice_subsystem.roll_resolved.connect(_on_roll_resolved)
 	if not _dice_subsystem.lock_state_changed.is_connected(_on_lock_state_changed):
 		_dice_subsystem.lock_state_changed.connect(_on_lock_state_changed)
+	if _dice_subsystem.has_signal("hold_state_changed") and not _dice_subsystem.hold_state_changed.is_connected(_on_hold_state_changed):
+		_dice_subsystem.hold_state_changed.connect(_on_hold_state_changed)
 	_resolve_support_services()
 	_reset_state()
 
@@ -123,6 +127,25 @@ func set_lock(index: int, should_lock: bool) -> void:
 	if _dice_subsystem.is_die_locked(index) == should_lock:
 		return
 	_dice_subsystem.set_die_locked(index, should_lock)
+	if should_lock:
+		_dice_subsystem.set_die_held(index, false)
+	_update_hud()
+
+func toggle_hold(index: int) -> void:
+	if _dice_subsystem == null:
+		return
+	set_hold(index, not _dice_subsystem.is_die_held(index))
+
+func set_hold(index: int, should_hold: bool) -> void:
+	if _state != TurnState.ACTION:
+		return
+	if _dice_subsystem == null:
+		return
+	if _dice_subsystem.is_die_held(index) == should_hold:
+		return
+	_dice_subsystem.set_die_held(index, should_hold)
+	if should_hold:
+		_dice_subsystem.set_die_locked(index, false)
 	_update_hud()
 
 func commit_dice() -> void:
@@ -154,15 +177,25 @@ func _on_lock_state_changed(_locked: Array[int]) -> void:
 	dice_locked_changed.emit(_locked.duplicate())
 	_update_hud()
 
+func _on_hold_state_changed(held: Array[int]) -> void:
+	_held_indices = held.duplicate()
+	dice_hold_changed.emit(_held_indices.duplicate())
+	_update_hud()
+
 func _update_hud() -> void:
 	if _hud_controller == null or _dice_subsystem == null:
 		return
 	var locked = _dice_subsystem.get_locked_indices()
-	_hud_controller.update_for_roll(_current_results, locked, _exhausted_indices)
+	if _dice_subsystem.has_method("get_held_indices"):
+		_held_indices = _dice_subsystem.get_held_indices()
+	else:
+		_held_indices = []
+	_hud_controller.update_for_roll(_current_results, locked, _exhausted_indices, _held_indices)
 
 func _reset_state() -> void:
 	_current_results = [1, 1, 1]
 	_exhausted_indices.clear()
+	_held_indices.clear()
 	_state = TurnState.IDLE
 
 func _apply_roll_outcome() -> void:

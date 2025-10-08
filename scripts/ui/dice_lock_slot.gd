@@ -33,17 +33,20 @@ func drop_data(_position: Vector2, data: Variant) -> void:
 func accept_token(token: DieToken) -> void:
 	_clear_existing_reference(token)
 	token.reparent(self)
-	token.set_locked(true)
+	token.set_held(true)
+	token.set_locked(false)
 	current_token = token
 	_update_placeholder()
 
 func release_token(token: DieToken) -> void:
 	if current_token == token:
+		token.set_held(false)
 		current_token = null
 	_update_placeholder()
 
 func clear_slot() -> void:
 	if current_token != null:
+		current_token.set_held(false)
 		current_token = null
 	_update_placeholder()
 

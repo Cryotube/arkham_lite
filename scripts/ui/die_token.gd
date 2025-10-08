@@ -10,6 +10,7 @@ signal drag_started(token: DieToken)
 @onready var _status_label: Label = $VBox/StatusLabel
 
 var _is_locked: bool = false
+var _is_held: bool = false
 var _is_exhausted: bool = false
 
 func _ready() -> void:
@@ -24,10 +25,21 @@ func set_value(value: int) -> void:
 
 func set_locked(locked: bool) -> void:
 	_is_locked = locked
+	if locked:
+		_is_held = false
+	_update_status()
+
+func set_held(held: bool) -> void:
+	_is_held = held
+	if held:
+		_is_locked = false
 	_update_status()
 
 func set_exhausted(exhausted: bool) -> void:
 	_is_exhausted = exhausted
+	if exhausted:
+		_is_locked = false
+		_is_held = false
 	_update_status()
 
 func _update_status() -> void:
@@ -39,6 +51,10 @@ func _update_status() -> void:
 		_status_label.text = "Locked"
 		_status_label.visible = true
 		modulate = Color(0.74, 0.97, 1.0, 1)
+	elif _is_held:
+		_status_label.text = "Held"
+		_status_label.visible = true
+		modulate = Color(0.49, 0.9, 0.97, 1)
 	else:
 		_status_label.visible = false
 		modulate = Color(1, 1, 1, 1)

@@ -24,6 +24,7 @@ func drop_data(_position: Vector2, data: Variant) -> void:
 func add_token(token: DieToken) -> void:
 	token.reparent(self)
 	token.set_locked(false)
+	token.set_held(false)
 	_move_token_to_order(token)
 	_update_placeholder()
 

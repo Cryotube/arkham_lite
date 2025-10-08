@@ -6,9 +6,12 @@ const DiceTokenShelf = preload("res://scripts/ui/dice_token_shelf.gd")
 const DiceLockSlot = preload("res://scripts/ui/dice_lock_slot.gd")
 const TurnManager = preload("res://scripts/systems/turn_manager.gd")
 
+const COLOR_SELECTED_ROOM := Color(0.49, 0.901961, 0.968627, 1.0)
+const COLOR_SELECTED_THREAT := Color(0.960784, 0.501961, 0.27451, 1.0)
+
 signal roll_requested
 signal confirm_requested
-signal lock_requested(index: int, should_lock: bool)
+signal hold_requested(index: int, should_hold: bool)
 
 var _dice_subsystem = null
 @onready var _dice_token_shelf: DiceTokenShelf = $"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"
@@ -26,8 +29,6 @@ var _dice_subsystem = null
 @onready var _confirm_button: Button = $"MainLayout/DiceDock/LockColumn/ActionButtons/ConfirmButton"
 @onready var _exhaust_label: Label = $"MainLayout/DiceDock/LockColumn/ExhaustTray/ExhaustLabel"
 @onready var _resource_panel = $"MainLayout/ResourcePanel"
-@onready var _room_list: VBoxContainer = $"MainLayout/MainBody/LeftDock/RoomList"
-@onready var _threat_list: VBoxContainer = $"MainLayout/MainBody/LeftDock/ThreatList"
 @onready var _context_info: RichTextLabel = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextScroll/ContextInfo"
 @onready var _enter_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions/EnterButton"
 @onready var _cycle_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions/CycleButton"
@@ -45,14 +46,22 @@ var _dice_subsystem = null
 @onready var _tutorial_body: RichTextLabel = $"TutorialOverlay/TutorialVBox/TutorialBody"
 @onready var _tutorial_skip: Button = $"TutorialOverlay/TutorialVBox/TutorialActions/TutorialSkip"
 @onready var _tutorial_next: Button = $"TutorialOverlay/TutorialVBox/TutorialActions/TutorialNext"
+@onready var _room_list_container: VBoxContainer = $"MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox/RoomScroll/RoomList/RoomItems"
+@onready var _room_empty_label: Label = $"MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox/RoomScroll/RoomList/RoomEmptyLabel"
+@onready var _threat_list_container: VBoxContainer = $"MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox/ThreatScroll/ThreatList/ThreatItems"
+@onready var _threat_empty_label: Label = $"MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox/ThreatScroll/ThreatList/ThreatEmptyLabel"
+@onready var _context_actions: HBoxContainer = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions"
 
 var _turn_manager: TurnManager = null
 var _room_queue_service: Node = null
 var _threat_service: Node = null
 var _event_resolver: Node = null
 var _selected_room: Dictionary = {}
+var _selected_room_index: int = -1
 var _current_queue: Array[Dictionary] = []
+var _current_threats: Array[Dictionary] = []
 var _last_scouted_room: Dictionary = {}
+var _selected_threat_id: String = ""
 var _tutorial_service: Node = null
 var _telemetry_hub: Node = null
 var _die_slot_map: Dictionary = {}
@@ -84,6 +93,7 @@ func _connect_inputs() -> void:
 	_banner_timer.timeout.connect(_on_banner_timer_timeout)
 	_tutorial_next.pressed.connect(_on_tutorial_next_pressed)
 	_tutorial_skip.pressed.connect(_on_tutorial_skip_pressed)
+	_context_actions.visible = false
 
 func _connect_services() -> void:
 	_room_queue_service = _get_room_service()
@@ -116,7 +126,7 @@ func set_turn_manager(turn_manager) -> void:
 	_turn_manager = turn_manager
 	roll_requested.connect(_turn_manager.request_roll)
 	confirm_requested.connect(_turn_manager.commit_dice)
-	lock_requested.connect(_on_lock_request)
+	hold_requested.connect(_on_hold_request)
 	if not _turn_manager.room_entered.is_connected(_on_room_entered):
 		_turn_manager.room_entered.connect(_on_room_entered)
 	if not _turn_manager.room_cycled.is_connected(_on_room_cycled):
@@ -147,18 +157,21 @@ func get_dice_subsystem():
 
 func reset_hud_state() -> void:
 	_reset_lock_ui()
-	update_for_roll([1, 1, 1], [], [])
+	update_for_roll([1, 1, 1], [], [], [])
 	refresh_resource_panel()
 
-func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[int]) -> void:
+func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[int], held: Array[int] = []) -> void:
 	var locked_lookup: Dictionary = {}
 	for index in locked:
 		locked_lookup[index] = true
+	var held_lookup: Dictionary = {}
+	for index in held:
+		held_lookup[index] = true
 	for slot in _lock_slots:
 		if slot == null:
 			continue
 		var token := slot.current_token
-		if token and not locked_lookup.has(token.die_index):
+		if token and not locked_lookup.has(token.die_index) and not held_lookup.has(token.die_index):
 			slot.release_token(token)
 			_die_slot_map.erase(token.die_index)
 			_ensure_token_in_shelf(token)
@@ -174,18 +187,24 @@ func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[i
 		var value: int = results[die_index] if die_index < results.size() else 0
 		var is_exhausted: bool = die_index in exhausted
 		var should_lock: bool = locked_lookup.has(die_index) and not is_exhausted
+		var should_hold: bool = held_lookup.has(die_index) and not is_exhausted
 		token.set_value(value)
-		if should_lock:
+		if should_lock or should_hold:
 			var slot_index: int = int(_die_slot_map.get(die_index, -1))
 			if slot_index < 0 or slot_index >= _lock_slots.size() or _lock_slots[slot_index].current_token != token:
 				if slot_index >= 0 and slot_index < _lock_slots.size():
 					_lock_slots[slot_index].release_token(token)
 				slot_index = 0 if available_slots.is_empty() else available_slots.pop_front()
 				_assign_token_to_slot(token, slot_index)
-			else:
+			if should_lock:
 				token.set_locked(true)
+				token.set_held(false)
+			else:
+				token.set_locked(false)
+				token.set_held(true)
 		else:
 			_ensure_token_in_shelf(token)
+			token.set_held(false)
 			token.set_locked(false)
 			_die_slot_map.erase(die_index)
 		token.set_exhausted(is_exhausted)
@@ -221,6 +240,7 @@ func _reset_lock_ui() -> void:
 		for token in _dice_tokens:
 			if token:
 				token.set_locked(false)
+				token.set_held(false)
 				token.set_exhausted(false)
 				_dice_token_shelf.add_token(token)
 
@@ -250,6 +270,82 @@ func _ensure_token_in_shelf(token: DieToken) -> void:
 	_die_slot_map.erase(token.die_index)
 	if token.get_parent() != _dice_token_shelf:
 		_dice_token_shelf.add_token(token)
+	else:
+		token.set_held(false)
+		token.set_locked(false)
+
+func _refresh_room_list() -> void:
+	for child in _room_list_container.get_children():
+		child.queue_free()
+	if _current_queue.is_empty():
+		_room_empty_label.show()
+		return
+	_room_empty_label.hide()
+	for index in _current_queue.size():
+		var button := _create_room_button(index, _current_queue[index])
+		_room_list_container.add_child(button)
+
+func _create_room_button(index: int, room: Dictionary) -> Button:
+	var button := Button.new()
+	var label := String(room.get("display_name", room.get("name", "Room")))
+	if index == 0:
+		label = "Top: %s" % label
+	button.text = label
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_NONE
+	if index == _selected_room_index:
+		button.add_theme_color_override("font_color", COLOR_SELECTED_ROOM)
+	button.pressed.connect(_on_room_button_pressed.bind(index))
+	return button
+
+func _on_room_button_pressed(index: int) -> void:
+	if index < 0 or index >= _current_queue.size():
+		return
+	_select_room_index(index)
+
+func _select_room_index(index: int) -> void:
+	if index < 0 or index >= _current_queue.size():
+		return
+	_selected_room_index = index
+	var room_copy := _current_queue[index].duplicate(true)
+	_on_room_selected(index, room_copy)
+	_refresh_room_list()
+
+func _refresh_threat_list() -> void:
+	for child in _threat_list_container.get_children():
+		child.queue_free()
+	if _current_threats.is_empty():
+		_threat_empty_label.show()
+		return
+	_threat_empty_label.hide()
+	for index in _current_threats.size():
+		var button := _create_threat_button(index, _current_threats[index])
+		_threat_list_container.add_child(button)
+
+func _create_threat_button(index: int, threat: Dictionary) -> Button:
+	var button := Button.new()
+	button.text = String(threat.get("display_name", threat.get("name", "Threat")))
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_NONE
+	var threat_id := String(threat.get("id", threat.get("slug", "")))
+	if threat_id == _selected_threat_id:
+		button.add_theme_color_override("font_color", COLOR_SELECTED_THREAT)
+	button.pressed.connect(_on_threat_button_pressed.bind(index))
+	return button
+
+func _on_threat_button_pressed(index: int) -> void:
+	if index < 0 or index >= _current_threats.size():
+		return
+	_select_threat_index(index)
+
+func _select_threat_index(index: int) -> void:
+	if index < 0 or index >= _current_threats.size():
+		return
+	var threat_copy := _current_threats[index].duplicate(true)
+	_selected_threat_id = String(threat_copy.get("id", threat_copy.get("slug", "")))
+	_on_threat_selected(threat_copy)
+	_refresh_threat_list()
+
 func _die_name_for_index(index: int) -> String:
 	var names: Array[String] = ["Die A", "Die B", "Die C"]
 	return names[index] if index < names.size() else "Die"
@@ -273,76 +369,65 @@ func _on_lock_slot_drop(token_path: NodePath, die_index: int, slot_index: int) -
 			_ensure_token_in_shelf(token)
 			return
 	_assign_token_to_slot(token, slot_index)
-	lock_requested.emit(die_index, true)
+	hold_requested.emit(die_index, true)
 
 func _on_die_released(token_path: NodePath, die_index: int) -> void:
 	var token := _resolve_token_from_path(token_path)
 	if token == null:
 		return
 	_ensure_token_in_shelf(token)
-	lock_requested.emit(die_index, false)
+	hold_requested.emit(die_index, false)
 
-func _on_lock_request(index: int, should_lock: bool) -> void:
+func _on_hold_request(index: int, should_hold: bool) -> void:
 	if _turn_manager == null:
 		return
-	if _turn_manager.has_method("set_lock"):
-		_turn_manager.set_lock(index, should_lock)
-	elif _turn_manager.has_method("toggle_lock"):
+	if _turn_manager.has_method("set_hold"):
+		_turn_manager.set_hold(index, should_hold)
+	elif _turn_manager.has_method("toggle_hold"):
 		var subsystem = get_dice_subsystem()
-		var currently_locked: bool = subsystem != null and subsystem.is_die_locked(index)
-		if currently_locked != should_lock:
-			_turn_manager.toggle_lock(index)
+		var currently_held: bool = subsystem != null and subsystem.has_method("is_die_held") and subsystem.is_die_held(index)
+		if currently_held != should_hold:
+			_turn_manager.toggle_hold(index)
 
 func _on_room_queue_updated(queue: Array[Dictionary]) -> void:
-	_clear_children(_room_list)
 	_current_queue.clear()
 	for room in queue:
 		_current_queue.append(room.duplicate(true))
 	if queue.is_empty():
-		_room_list.add_child(_make_placeholder_label("No rooms available."))
 		_selected_room = {}
+		_selected_room_index = -1
+		_context_info.text = "No rooms queued. Explore the board to reveal new encounters."
 		_update_context_buttons()
+		_context_actions.visible = false
+		_refresh_room_list()
 		return
+	var preferred_id: String = String(_selected_room.get("id", _selected_room.get("slug", "")))
+	var resolved_index: int = -1
 	for index in queue.size():
-		var room: Dictionary = queue[index]
-		var button := Button.new()
-		button.text = room.get("name", "Unknown Compartment")
-		button.tooltip_text = room.get("summary", "")
-		button.size_flags_horizontal = Control.SIZE_FILL
-		button.pressed.connect(_on_room_selected.bind(index, room.duplicate(true)))
-		_room_list.add_child(button)
-	_update_context_buttons()
+		var room_id: String = String(queue[index].get("id", queue[index].get("slug", "")))
+		if not preferred_id.is_empty() and room_id == preferred_id:
+			resolved_index = index
+			break
+	if resolved_index == -1:
+		resolved_index = 0
+	_select_room_index(resolved_index)
 
 func _on_threats_updated(threats: Array[Dictionary]) -> void:
-	_clear_children(_threat_list)
+	_current_threats.clear()
+	_selected_threat_id = ""
 	if threats.is_empty():
-		_threat_list.add_child(_make_placeholder_label("No active threats."))
+		_refresh_threat_list()
 		return
 	for threat in threats:
-		var button := Button.new()
-		var severity: String = String(threat.get("severity", ""))
-		button.text = "%s (T-%d | %s)" % [
-			threat.get("name", "Unknown Threat"),
-			int(threat.get("timer", 0)),
-			severity.capitalize()
-		]
-		var statuses := threat.get("status_effects", []) as Array
-		var tooltip_lines: Array[String] = []
-		tooltip_lines.append(String(threat.get("summary", "")))
-		if not statuses.is_empty():
-			var status_strings: Array[String] = []
-			for status in statuses:
-				status_strings.append("%s (%d)" % [status.get("label", "Status"), int(status.get("duration", 0))])
-			tooltip_lines.append("Effects: %s" % ", ".join(status_strings))
-		button.tooltip_text = "\n".join(tooltip_lines)
-		button.size_flags_horizontal = Control.SIZE_FILL
-		button.pressed.connect(_on_threat_selected.bind(threat.duplicate(true)))
-		_threat_list.add_child(button)
+		_current_threats.append(threat.duplicate(true))
+	_refresh_threat_list()
+	if _selected_room.is_empty() and not _current_threats.is_empty():
+		_select_threat_index(0)
 
 func _on_room_selected(index: int, room: Dictionary) -> void:
 	_selected_room = room
 	var summary: String = String(room.get("summary", "Uncharted module."))
-	var tags := (room.get("tags", []) as Array)
+	var tags: Array = room.get("tags", []) as Array
 	var header := "[b]%s[/b]" % room.get("name", "Unknown Compartment")
 	var tags_line := ""
 	if not tags.is_empty():
@@ -354,13 +439,14 @@ func _on_room_selected(index: int, room: Dictionary) -> void:
 	]
 	_context_info.text = "%s\n%s%s%s" % [header, summary, tags_line, rewards]
 	_update_context_buttons()
+	_context_actions.visible = true
 
 func _on_threat_selected(threat: Dictionary) -> void:
 	var header := "[b]%s[/b]" % threat.get("name", "Unknown Threat")
 	var timer := int(threat.get("timer", 0))
 	var severity: String = String(threat.get("severity", "moderate"))
 	var description: String = String(threat.get("summary", "Threat details pending."))
-	var statuses := threat.get("status_effects", []) as Array
+	var statuses: Array = threat.get("status_effects", []) as Array
 	var status_line := ""
 	if not statuses.is_empty():
 		var pieces: Array[String] = []
@@ -368,12 +454,6 @@ func _on_threat_selected(threat: Dictionary) -> void:
 			pieces.append("%s (%d)" % [status.get("label", "Effect"), int(status.get("duration", 0))])
 		status_line = "\nStatuses: %s" % ", ".join(pieces)
 	_context_info.text = "%s\nSeverity: %s\nTimer: %d\n%s%s" % [header, severity.capitalize(), timer, description, status_line]
-
-func _make_placeholder_label(text: String) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return label
 
 func _clear_children(container: Node) -> void:
 	var to_free: Array[Node] = []
@@ -447,6 +527,7 @@ func _update_context_buttons() -> void:
 	_enter_room_button.disabled = not can_enter
 	_cycle_room_button.disabled = top_room.is_empty()
 	_scout_room_button.disabled = top_room.is_empty()
+	_context_actions.visible = not top_room.is_empty()
 
 func _show_banner(text: String, critical: bool) -> void:
 	_banner_label.text = text
@@ -462,6 +543,7 @@ func _on_banner_timer_timeout() -> void:
 
 func _on_room_entered(room: Dictionary) -> void:
 	_selected_room = {}
+	_selected_room_index = -1
 	var summary: String = String(room.get("summary", ""))
 	_context_info.text = "[b]%s entered[/b]\n%s" % [room.get("name", "Room"), summary]
 	_show_banner("Room entered: %s" % room.get("name", "Room"), false)
@@ -469,6 +551,7 @@ func _on_room_entered(room: Dictionary) -> void:
 
 func _on_room_cycled(room: Dictionary) -> void:
 	_selected_room = {}
+	_selected_room_index = -1
 	_context_info.text = "Cycled room: %s" % room.get("name", "Unknown")
 	_update_context_buttons()
 

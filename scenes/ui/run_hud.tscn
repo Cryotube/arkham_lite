@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://runhud"]
+[gd_scene load_steps=13 format=3 uid="uid://runhud"]
 
 [ext_resource type="Script" path="res://scripts/ui/run_hud_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/dice/dice_viewport.tscn" id="2"]
@@ -8,7 +8,6 @@
 [ext_resource type="Script" path="res://scripts/ui/dice_token_shelf.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/ui/die_token.gd" id="7"]
 [ext_resource type="Script" path="res://scripts/ui/dice_lock_slot.gd" id="8"]
-
 [sub_resource type="StyleBoxFlat" id="1"]
 bg_color = Color(0.024, 0.035, 0.059, 0.92)
 corner_radius_bottom_left = 10
@@ -71,30 +70,100 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 6
 
 [node name="LeftDock" type="VBoxContainer" parent="MainLayout/MainBody"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(300, 0)
+size_flags_horizontal = 1
+size_flags_vertical = 3
+separation = 16
+
+[node name="RoomPanel" type="PanelContainer" parent="MainLayout/MainBody/LeftDock"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("1")
+
+[node name="RoomMargin" type="MarginContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="RoomVBox" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+separation = 12
+
+[node name="RoomHeader" type="HBoxContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox"]
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="RoomTitle" type="Label" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox/RoomHeader"]
+text = "Rooms"
+size_flags_horizontal = 3
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="RoomScroll" type="ScrollContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="RoomsHeader" type="Label" parent="MainLayout/MainBody/LeftDock"]
-text = "Room Queue"
+[node name="RoomList" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox/RoomScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+separation = 8
 
-[node name="RoomList" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock"]
+[node name="RoomEmptyLabel" type="Label" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox/RoomScroll/RoomList"]
+text = "No rooms queued."
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
+
+[node name="RoomItems" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox/RoomScroll/RoomList"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+separation = 6
+
+[node name="ThreatPanel" type="PanelContainer" parent="MainLayout/MainBody/LeftDock"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_styles/panel = SubResource("1")
 
-[node name="RoomPlaceholder" type="Label" parent="MainLayout/MainBody/LeftDock/RoomList"]
-text = "No rooms available."
+[node name="ThreatMargin" type="MarginContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
-[node name="ThreatHeader" type="Label" parent="MainLayout/MainBody/LeftDock"]
+[node name="ThreatVBox" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+separation = 12
+
+[node name="ThreatHeader" type="HBoxContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox"]
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="ThreatTitle" type="Label" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox/ThreatHeader"]
 text = "Threats"
-theme_override_colors/font_color = Color(1, 0.870588, 0.701961, 1)
+size_flags_horizontal = 3
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
 
-[node name="ThreatList" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock"]
+[node name="ThreatScroll" type="ScrollContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ThreatPlaceholder" type="Label" parent="MainLayout/MainBody/LeftDock/ThreatList"]
+[node name="ThreatList" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox/ThreatScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+separation = 8
+
+[node name="ThreatEmptyLabel" type="Label" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox/ThreatScroll/ThreatList"]
 text = "No active threats."
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
+
+[node name="ThreatItems" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox/ThreatScroll/ThreatList"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+separation = 6
 
 [node name="RightColumn" type="VBoxContainer" parent="MainLayout/MainBody"]
 size_flags_horizontal = 3
@@ -133,6 +202,7 @@ autowrap_mode = 2
 text = "Select a room or threat to view details."
 
 [node name="ContextActions" type="HBoxContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
+visible = true
 alignment = 1
 separation = 12
 
@@ -315,7 +385,7 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
 
 [node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0/VBox"]
-text = "Locked"
+text = "Held"
 horizontal_alignment = 1
 visible = false
 theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
@@ -341,7 +411,7 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
 
 [node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1/VBox"]
-text = "Locked"
+text = "Held"
 horizontal_alignment = 1
 visible = false
 theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
@@ -367,7 +437,7 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 26
 
 [node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2/VBox"]
-text = "Locked"
+text = "Held"
 horizontal_alignment = 1
 visible = false
 theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
@@ -379,7 +449,7 @@ custom_minimum_size = Vector2(260, 220)
 separation = 12
 
 [node name="LockLabel" type="Label" parent="MainLayout/DiceDock/LockColumn"]
-text = "Lock Zone"
+text = "Hold Rail"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.49, 0.901961, 0.968627, 1)
 
@@ -401,7 +471,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Placeholder" type="Label" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot0/VBox"]
-text = "Drop die"
+text = "Drop to hold"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 
@@ -418,7 +488,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Placeholder" type="Label" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot1/VBox"]
-text = "Drop die"
+text = "Drop to hold"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 
@@ -435,7 +505,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="Placeholder" type="Label" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot2/VBox"]
-text = "Drop die"
+text = "Drop to hold"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 

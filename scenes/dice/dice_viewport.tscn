@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://diceviewport"]
+[gd_scene load_steps=10 format=3 uid="uid://diceviewport"]
 
 [ext_resource type="Script" path="res://scripts/systems/dice_subsystem.gd" id="1"]
 
@@ -21,6 +21,18 @@ emission = Color(0.227, 0.949, 0.839, 1)
 emission_energy = 0.25
 roughness = 0.3
 uv1_triplanar = true
+
+[sub_resource type="BoxShape3D" id="4"]
+size = Vector3(6, 0.2, 6)
+
+[sub_resource type="BoxShape3D" id="5"]
+size = Vector3(6, 3, 0.5)
+
+[sub_resource type="BoxShape3D" id="6"]
+size = Vector3(0.5, 3, 6)
+
+[sub_resource type="BoxShape3D" id="7"]
+size = Vector3(6, 0.2, 6)
 
 [node name="DiceViewportContainer" type="SubViewportContainer"]
 stretch = true
@@ -55,3 +67,53 @@ light_energy = 1.2
 position = Vector3(0, 0, 0)
 mesh = SubResource("2")
 material_override = SubResource("3")
+
+[node name="Bounds" type="Node3D" parent="DiceViewport/DiceRoot"]
+
+[node name="FloorBody" type="StaticBody3D" parent="DiceViewport/DiceRoot/Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="FloorShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/FloorBody"]
+shape = SubResource("4")
+
+[node name="NorthWall" type="StaticBody3D" parent="DiceViewport/DiceRoot/Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 3)
+collision_layer = 1
+collision_mask = 1
+
+[node name="NorthShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/NorthWall"]
+shape = SubResource("5")
+
+[node name="SouthWall" type="StaticBody3D" parent="DiceViewport/DiceRoot/Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -3)
+collision_layer = 1
+collision_mask = 1
+
+[node name="SouthShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/SouthWall"]
+shape = SubResource("5")
+
+[node name="EastWall" type="StaticBody3D" parent="DiceViewport/DiceRoot/Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1.5, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="EastShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/EastWall"]
+shape = SubResource("6")
+
+[node name="WestWall" type="StaticBody3D" parent="DiceViewport/DiceRoot/Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1.5, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="WestShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/WestWall"]
+shape = SubResource("6")
+
+[node name="Ceiling" type="StaticBody3D" parent="DiceViewport/DiceRoot/Bounds"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 0)
+collision_layer = 1
+collision_mask = 1
+
+[node name="CeilingShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/Ceiling"]
+shape = SubResource("7")

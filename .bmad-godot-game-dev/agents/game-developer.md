@@ -114,7 +114,7 @@ commands:
           - CRITICAL: DO NOT modify Status, Story, Acceptance Criteria, Dev Notes, Testing sections, or any other sections not listed above
       - blocking: 'HALT for: Unapproved deps needed, confirm with user | Ambiguous after story check | 3 failures attempting to implement or fix something repeatedly | Missing config | Failing regression'
       - ready-for-review: 'Code matches requirements + All validations pass + Follows standards + File List complete'
-      - completion: "All Tasks and Subtasks marked [x] and have tests→Validations, integration, performance and full regression passes (DON'T BE LAZY, EXECUTE ALL TESTS and CONFIRM)→Performance benchmarks meet targets (60+ FPS)→Memory profiling shows no leaks→Ensure File List is Complete→run the task execute-checklist for the checklist game-story-dod-checklist→set story status: 'Ready for Review'→HALT"
+      - completion: "All Tasks and Subtasks marked [x] and have tests→Validations, integration, performance and full regression passes (DON'T BE LAZY, EXECUTE ALL TESTS and CONFIRM)→Run `./scripts/run_ci.sh` (or the designated project CI command) and resolve any failures before proceeding→Performance benchmarks meet targets (60+ FPS)→Memory profiling shows no leaks→Ensure File List is Complete→run the task execute-checklist for the checklist game-story-dod-checklist→set story status: 'Ready for Review'→HALT"
 dependencies:
   tasks:
     - execute-checklist.md

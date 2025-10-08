@@ -39,3 +39,8 @@
    - Agents: game-ux-expert (contrast/dynamic type audit), game-architect (responsive HUD layout plan), game-developer (settings scene scaffolding), game-qa (accessibility verification).  
    - Deliverables: Audit report, responsive layout spec, settings scene stub, QA acceptance grid.  
    - Success Gate: HUD adapts to large text/color palettes without overlap and settings toggles mapped to systems.
+4. **Run HUD + Threat Loop Implementation**  
+   - Agents: game-developer (lead), game-ux-expert and game-qa for overlay polish and validation.  
+   - Deliverables: `artifacts/phase4_run_hud_dev_plan.md`, updated HUD overlay scenes and scripts, telemetry/perf scripts.  
+   - Progress: Overlay CanvasLayers, floating toggle bar, and context action popup wiring completed (2024-05-17); dice hold UX refactored with new subsystem support and tests passing (2024-05-18); next up is dice overlay action hints and timeline telemetry.  
+   - Success Gate: Board HUD interactions stay at 60 FPS with overlay toggle latency <0.3 ms, dice badge updates <0.5 ms, and threat timeline fully replaces banner system.
