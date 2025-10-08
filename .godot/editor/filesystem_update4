@@ -1,0 +1,8 @@
+res://scenes/dice/dice_viewport.tscn
+res://scenes/ui/resource_panel.tscn
+res://scenes/ui/run_hud.tscn
+res://scripts/systems/dice_subsystem.gd
+res://scripts/ui/run_hud_controller.gd
+res://scripts/systems/turn_manager.gd
+res://scripts/dice/die_controller.gd
+res://scripts/ui/die_token.gd

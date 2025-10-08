@@ -1,6 +1,9 @@
 extends Node
 class_name ResourceLedgerSingleton
 
+const ResourceSnapshot = preload("res://scripts/autoload/resource_snapshot.gd")
+const ResourceTelemetryPayload = preload("res://scripts/autoload/resource_telemetry_payload.gd")
+
 signal health_changed(current: int, max: int)
 signal materials_changed(current: int, max: int)
 signal oxygen_changed(current: int, max: int)
@@ -31,6 +34,7 @@ var _threat_critical_threshold: float = 0.85
 
 var _save_service: Node = null
 var _telemetry_hub: Node = null
+var _snapshot: ResourceSnapshot = ResourceSnapshot.new()
 
 func _ready() -> void:
 	_resolve_save_service()
@@ -68,8 +72,10 @@ func set_health(value: int) -> void:
 	_health = clamped
 	health_changed.emit(_health, max_health)
 	_update_threshold_state("health", _health, max_health)
+	_refresh_snapshot()
 	_persist_state()
-	_record_telemetry("health_updated", {"current": _health, "max": max_health})
+	var payload := ResourceTelemetryPayload.new(&"health", _health, max_health, _snapshot.state_for(&"health"))
+	_record_telemetry("health_updated", payload)
 
 func adjust_health(delta: int) -> void:
 	set_health(_health + delta)
@@ -82,8 +88,10 @@ func set_materials(value: int) -> void:
 	_materials = clamped
 	materials_changed.emit(_materials, max_materials)
 	_update_threshold_state("materials", _materials, max_materials)
+	_refresh_snapshot()
 	_persist_state()
-	_record_telemetry("materials_updated", {"current": _materials, "max": max_materials})
+	var payload := ResourceTelemetryPayload.new(&"materials", _materials, max_materials, _snapshot.state_for(&"materials"))
+	_record_telemetry("materials_updated", payload)
 
 func adjust_materials(delta: int) -> void:
 	set_materials(_materials + delta)
@@ -96,8 +104,10 @@ func set_oxygen(value: int) -> void:
 	_oxygen = clamped
 	oxygen_changed.emit(_oxygen, max_oxygen)
 	_update_threshold_state("oxygen", _oxygen, max_oxygen)
+	_refresh_snapshot()
 	_persist_state()
-	_record_telemetry("oxygen_updated", {"current": _oxygen, "max": max_oxygen})
+	var payload := ResourceTelemetryPayload.new(&"oxygen", _oxygen, max_oxygen, _snapshot.state_for(&"oxygen"))
+	_record_telemetry("oxygen_updated", payload)
 
 func adjust_oxygen(delta: int) -> void:
 	set_oxygen(_oxygen + delta)
@@ -111,11 +121,13 @@ func set_threat(value: int) -> void:
 	_threat = clamped
 	threat_changed.emit(_threat, max_threat)
 	_update_threshold_state("threat", _threat, max_threat)
-	var current_state: StringName = _threshold_states.get("threat", "normal")
+	_refresh_snapshot()
+	var current_state: StringName = _snapshot.state_for(&"threat")
 	if current_state != previous_state:
 		threat_threshold_crossed.emit(current_state)
 	_persist_state()
-	_record_telemetry("threat_updated", {"current": _threat, "max": max_threat, "state": current_state})
+	var payload := ResourceTelemetryPayload.new(&"threat", _threat, max_threat, current_state)
+	_record_telemetry("threat_updated", payload)
 
 func adjust_threat(delta: int) -> void:
 	set_threat(_threat + delta)
@@ -126,19 +138,26 @@ func apply_roll_outcome(results: Array[int]) -> void:
 	var earned_materials: int = 0
 	for value in results:
 		earned_materials += int(value)
-	if earned_materials > 0:
-		adjust_materials(earned_materials / 3)
+	var material_gain := int(earned_materials / 3)
+	if material_gain > 0:
+		adjust_materials(material_gain)
 	adjust_oxygen(-1)
 	adjust_threat(1)
-	_record_telemetry("roll_outcome", {"results": results, "materials_gain": earned_materials / 3})
+	var payload := ResourceTelemetryPayload.new(
+		&"roll_outcome",
+		material_gain,
+		0,
+		&"stable",
+		{
+			"results": results.duplicate(),
+			"materials_gain": material_gain,
+		}
+	)
+	_record_telemetry("roll_outcome", payload)
 
-func get_snapshot() -> Dictionary:
-	return {
-		"health": _health,
-		"materials": _materials,
-		"oxygen": _oxygen,
-		"threat": _threat,
-	}
+func get_snapshot() -> ResourceSnapshot:
+	_refresh_snapshot()
+	return _build_snapshot()
 
 func get_health() -> int:
 	return _health
@@ -152,11 +171,33 @@ func get_oxygen() -> int:
 func get_threat() -> int:
 	return _threat
 
-func _apply_snapshot(snapshot: Dictionary) -> void:
-	_health = clamp(int(snapshot.get("health", max_health)), 0, max_health)
-	_materials = clamp(int(snapshot.get("materials", max_materials)), 0, max_materials)
-	_oxygen = clamp(int(snapshot.get("oxygen", max_oxygen)), 0, max_oxygen)
-	_threat = clamp(int(snapshot.get("threat", 0)), 0, max_threat)
+func _apply_snapshot(snapshot_data: Variant) -> void:
+	if snapshot_data == null:
+		reset()
+		return
+	var typed_snapshot: ResourceSnapshot = null
+	if snapshot_data is ResourceSnapshot:
+		typed_snapshot = snapshot_data
+	elif snapshot_data is Dictionary:
+		var data: Dictionary = snapshot_data
+		typed_snapshot = ResourceSnapshot.new(
+			int(data.get("health", max_health)),
+			int(data.get("max_health", max_health)),
+			int(data.get("materials", max_materials)),
+			int(data.get("max_materials", max_materials)),
+			int(data.get("oxygen", max_oxygen)),
+			int(data.get("max_oxygen", max_oxygen)),
+			int(data.get("threat", 0)),
+			int(data.get("max_threat", max_threat)),
+			data.get("threshold_states", {})
+		)
+	if typed_snapshot == null:
+		reset()
+		return
+	_health = clamp(typed_snapshot.health, 0, max_health)
+	_materials = clamp(typed_snapshot.materials, 0, max_materials)
+	_oxygen = clamp(typed_snapshot.oxygen, 0, max_oxygen)
+	_threat = clamp(typed_snapshot.threat, 0, max_threat)
 	_emit_all_changes()
 
 func _emit_all_changes() -> void:
@@ -168,6 +209,23 @@ func _emit_all_changes() -> void:
 	_update_threshold_state("materials", _materials, max_materials, true)
 	_update_threshold_state("oxygen", _oxygen, max_oxygen, true)
 	_update_threshold_state("threat", _threat, max_threat, true)
+	_refresh_snapshot()
+
+func _refresh_snapshot() -> void:
+	_snapshot = _build_snapshot()
+
+func _build_snapshot() -> ResourceSnapshot:
+	return ResourceSnapshot.new(
+		_health,
+		max_health,
+		_materials,
+		max_materials,
+		_oxygen,
+		max_oxygen,
+		_threat,
+		max_threat,
+		_threshold_states
+	)
 
 func _update_threshold_state(key: StringName, current: int, max_value: int, force: bool = false) -> void:
 	var ratio: float = 0.0
@@ -188,10 +246,11 @@ func _update_threshold_state(key: StringName, current: int, max_value: int, forc
 		_threshold_states[key] = state
 
 func _persist_state() -> void:
+	var snapshot := get_snapshot()
 	var service = _save_service_stub()
 	if service and service.has_method("store_run_snapshot"):
-		service.store_run_snapshot(get_snapshot())
-	_record_telemetry("ledger_snapshot", get_snapshot())
+		service.store_run_snapshot(snapshot)
+	_record_telemetry("ledger_snapshot", snapshot)
 
 func _resolve_save_service() -> void:
 	if _save_service != null:
@@ -214,6 +273,11 @@ func _resolve_telemetry() -> void:
 func _save_service_stub():
 	return _save_service
 
-func _record_telemetry(event_name: String, payload: Dictionary) -> void:
+func _record_telemetry(event_name: StringName, payload: Variant) -> void:
 	if _telemetry_hub != null and _telemetry_hub.has_method("record"):
-		_telemetry_hub.record(event_name, payload)
+		var body: Variant = payload
+		if payload is ResourceTelemetryPayload:
+			body = payload.to_dictionary()
+		elif payload is ResourceSnapshot:
+			body = payload.to_dictionary()
+		_telemetry_hub.record(event_name, body)

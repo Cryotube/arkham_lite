@@ -1,9 +1,27 @@
-[gd_scene load_steps=6 format=3 uid="uid://runhud"]
+[gd_scene load_steps=10 format=3 uid="uid://runhud"]
 
 [ext_resource type="Script" path="res://scripts/ui/run_hud_controller.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/dice/dice_viewport.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/resource_panel.tscn" id="3"]
 [ext_resource type="Script" path="res://scripts/ui/equipment_tab_controller.gd" id="4"]
+[ext_resource type="Theme" path="res://themes/base_theme.tres" id="5"]
+[ext_resource type="Script" path="res://scripts/ui/dice_token_shelf.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/ui/die_token.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/ui/dice_lock_slot.gd" id="8"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.024, 0.035, 0.059, 0.92)
+corner_radius_bottom_left = 10
+corner_radius_bottom_right = 10
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+border_color = Color(0.216, 0.968, 0.769, 0.28)
+border_width_left = 1
+border_width_right = 1
+border_width_top = 1
+border_width_bottom = 1
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 8
 
 [node name="RunHUD" type="Control"]
 anchors_preset = 15
@@ -15,14 +33,27 @@ offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
+theme = ExtResource("5")
 script = ExtResource("1")
+
+[node name="Backlight" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+color = Color(0.011, 0.015, 0.027, 0.9)
 
 [node name="MainLayout" type="VBoxContainer" parent="."]
 anchors_preset = 8
 anchor_left = 0.05
-anchor_top = 0.05
+anchor_top = 0.03
 anchor_right = 0.95
-anchor_bottom = 0.95
+anchor_bottom = 0.97
 offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
@@ -31,10 +62,13 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="ResourcePanel" parent="MainLayout" instance=ExtResource("3")]
+size_flags_vertical = 1
+size_flags_stretch_ratio = 1
 
 [node name="MainBody" type="HSplitContainer" parent="MainLayout"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 6
 
 [node name="LeftDock" type="VBoxContainer" parent="MainLayout/MainBody"]
 custom_minimum_size = Vector2(200, 0)
@@ -65,28 +99,50 @@ text = "No active threats."
 [node name="RightColumn" type="VBoxContainer" parent="MainLayout/MainBody"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-separation = 12
+separation = 16
 
-[node name="ContextHeader" type="Label" parent="MainLayout/MainBody/RightColumn"]
-text = "Context"
+[node name="ContextPane" type="PanelContainer" parent="MainLayout/MainBody/RightColumn"]
+size_flags_horizontal = 3
+size_flags_vertical = 2
+custom_minimum_size = Vector2(0, 180)
+theme_override_styles/panel = SubResource("1")
 
-[node name="ContextInfo" type="RichTextLabel" parent="MainLayout/MainBody/RightColumn"]
+[node name="ContextMargin" type="MarginContainer" parent="MainLayout/MainBody/RightColumn/ContextPane"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="ContextVBox" type="VBoxContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-text = "Select a room or threat to view details."
-fit_content = true
+separation = 12
 
-[node name="ContextActions" type="HBoxContainer" parent="MainLayout/MainBody/RightColumn"]
+[node name="ContextHeader" type="Label" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
+text = "Context"
+theme_override_font_sizes/font_size = 18
+
+[node name="ContextScroll" type="ScrollContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ContextInfo" type="RichTextLabel" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+autowrap_mode = 2
+text = "Select a room or threat to view details."
+
+[node name="ContextActions" type="HBoxContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
 alignment = 1
 separation = 12
 
-[node name="EnterButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextActions"]
+[node name="EnterButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions"]
 text = "Enter Top Room"
 
-[node name="CycleButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextActions"]
+[node name="CycleButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions"]
 text = "Cycle Top Room"
 
-[node name="ScoutButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextActions"]
+[node name="ScoutButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions"]
 text = "Scout Top Room"
 
 [node name="TabContainer" type="TabContainer" parent="MainLayout/MainBody/RightColumn"]
@@ -179,47 +235,224 @@ size_flags_horizontal = 3
 size_flags_vertical = 1
 separation = 4
 
-[node name="DiceSection" type="VBoxContainer" parent="MainLayout"]
+[node name="DiceDock" type="HSplitContainer" parent="MainLayout"]
 size_flags_horizontal = 3
-size_flags_vertical = 2
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3
+split_offset = 780
+dragger_visibility = 1
+custom_minimum_size = Vector2(0, 220)
+
+[node name="DiceViewportFrame" type="PanelContainer" parent="MainLayout/DiceDock"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 180)
+theme_override_styles/panel = SubResource("1")
+
+[node name="DiceViewportContainer" parent="MainLayout/DiceDock/DiceViewportFrame" instance=ExtResource("2")]
+
+[node name="ViewportOverlay" type="Control" parent="MainLayout/DiceDock/DiceViewportFrame"]
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+mouse_filter = 2
+
+[node name="DiceOverlay" type="MarginContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay"]
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = -160.0
+offset_right = -12.0
+offset_bottom = -12.0
+
+[node name="OverlayVBox" type="VBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+alignment = 1
 separation = 6
 
-[node name="DiceViewportContainer" parent="MainLayout/DiceSection" instance=ExtResource("2")]
+[node name="OverlayHint" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox"]
+text = "Drag dice into the lock zone to hold them."
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.49, 0.901961, 0.968627, 1)
 
-[node name="DiceValues" type="HBoxContainer" parent="MainLayout/DiceSection"]
+[node name="AvailableDiceRow" type="HBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox"]
 size_flags_horizontal = 3
+size_flags_vertical = 1
+separation = 12
+script = ExtResource("6")
 
-[node name="Die0" type="Label" parent="MainLayout/DiceSection/DiceValues"]
-text = "Die A: 1"
+[node name="Placeholder" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
+text = "Dice ready."
+theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 
-[node name="Die1" type="Label" parent="MainLayout/DiceSection/DiceValues"]
-text = "Die B: 1"
+[node name="DieToken0" type="PanelContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(110, 96)
+script = ExtResource("7")
+die_index = 0
 
-[node name="Die2" type="Label" parent="MainLayout/DiceSection/DiceValues"]
-text = "Die C: 1"
+[node name="VBox" type="VBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0"]
+alignment = 1
+separation = 4
 
-[node name="LockRow" type="HBoxContainer" parent="MainLayout/DiceSection"]
+[node name="NameLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0/VBox"]
+text = "Die A"
+horizontal_alignment = 1
 
-[node name="Lock0" type="Button" parent="MainLayout/DiceSection/LockRow"]
-text = "Lock A"
+[node name="ValueLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0/VBox"]
+text = "1"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
 
-[node name="Lock1" type="Button" parent="MainLayout/DiceSection/LockRow"]
-text = "Lock B"
+[node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0/VBox"]
+text = "Locked"
+horizontal_alignment = 1
+visible = false
+theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
 
-[node name="Lock2" type="Button" parent="MainLayout/DiceSection/LockRow"]
-text = "Lock C"
+[node name="DieToken1" type="PanelContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(110, 96)
+script = ExtResource("7")
+die_index = 1
 
-[node name="ActionButtons" type="HBoxContainer" parent="MainLayout/DiceSection"]
+[node name="VBox" type="VBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1"]
+alignment = 1
+separation = 4
 
-[node name="RollButton" type="Button" parent="MainLayout/DiceSection/ActionButtons"]
+[node name="NameLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1/VBox"]
+text = "Die B"
+horizontal_alignment = 1
+
+[node name="ValueLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1/VBox"]
+text = "1"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1/VBox"]
+text = "Locked"
+horizontal_alignment = 1
+visible = false
+theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
+
+[node name="DieToken2" type="PanelContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(110, 96)
+script = ExtResource("7")
+die_index = 2
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2"]
+alignment = 1
+separation = 4
+
+[node name="NameLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2/VBox"]
+text = "Die C"
+horizontal_alignment = 1
+
+[node name="ValueLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2/VBox"]
+text = "1"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+
+[node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2/VBox"]
+text = "Locked"
+horizontal_alignment = 1
+visible = false
+theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
+
+[node name="LockColumn" type="VBoxContainer" parent="MainLayout/DiceDock"]
+size_flags_horizontal = 1
+size_flags_vertical = 3
+custom_minimum_size = Vector2(260, 220)
+separation = 12
+
+[node name="LockLabel" type="Label" parent="MainLayout/DiceDock/LockColumn"]
+text = "Lock Zone"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.49, 0.901961, 0.968627, 1)
+
+[node name="LockTray" type="VBoxContainer" parent="MainLayout/DiceDock/LockColumn"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+separation = 10
+
+[node name="LockSlot0" type="PanelContainer" parent="MainLayout/DiceDock/LockColumn/LockTray"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+custom_minimum_size = Vector2(120, 76)
+script = ExtResource("8")
+slot_index = 0
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot0"]
+alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Placeholder" type="Label" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot0/VBox"]
+text = "Drop die"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
+
+[node name="LockSlot1" type="PanelContainer" parent="MainLayout/DiceDock/LockColumn/LockTray"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+custom_minimum_size = Vector2(120, 76)
+script = ExtResource("8")
+slot_index = 1
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot1"]
+alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Placeholder" type="Label" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot1/VBox"]
+text = "Drop die"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
+
+[node name="LockSlot2" type="PanelContainer" parent="MainLayout/DiceDock/LockColumn/LockTray"]
+size_flags_horizontal = 3
+size_flags_vertical = 1
+custom_minimum_size = Vector2(120, 76)
+script = ExtResource("8")
+slot_index = 2
+
+[node name="VBox" type="VBoxContainer" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot2"]
+alignment = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Placeholder" type="Label" parent="MainLayout/DiceDock/LockColumn/LockTray/LockSlot2/VBox"]
+text = "Drop die"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
+
+[node name="ActionButtons" type="HBoxContainer" parent="MainLayout/DiceDock/LockColumn"]
+alignment = 1
+separation = 12
+
+[node name="RollButton" type="Button" parent="MainLayout/DiceDock/LockColumn/ActionButtons"]
 text = "Roll"
 
-[node name="ConfirmButton" type="Button" parent="MainLayout/DiceSection/ActionButtons"]
+[node name="ConfirmButton" type="Button" parent="MainLayout/DiceDock/LockColumn/ActionButtons"]
 text = "Confirm"
 
-[node name="ExhaustTray" type="HBoxContainer" parent="MainLayout/DiceSection"]
+[node name="ExhaustTray" type="HBoxContainer" parent="MainLayout/DiceDock/LockColumn"]
+alignment = 1
 
-[node name="ExhaustLabel" type="Label" parent="MainLayout/DiceSection/ExhaustTray"]
+[node name="ExhaustLabel" type="Label" parent="MainLayout/DiceDock/LockColumn/ExhaustTray"]
 text = "Exhausted Dice: none"
 
 [node name="MessageBanner" type="PanelContainer" parent="MainLayout"]

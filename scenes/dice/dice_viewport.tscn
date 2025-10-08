@@ -1,10 +1,32 @@
-[gd_scene load_steps=3 format=3 uid="uid://diceviewport"]
+[gd_scene load_steps=6 format=3 uid="uid://diceviewport"]
 
 [ext_resource type="Script" path="res://scripts/systems/dice_subsystem.gd" id="1"]
+
+[sub_resource type="Environment" id="1"]
+background_mode = 1
+background_color = Color(0.012, 0.016, 0.028, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.047, 0.188, 0.196, 1)
+ambient_light_energy = 0.4
+fog_enabled = true
+fog_color = Color(0.016, 0.027, 0.047, 1)
+fog_density = 0.02
+
+[sub_resource type="PlaneMesh" id="2"]
+size = Vector2(6, 6)
+
+[sub_resource type="StandardMaterial3D" id="3"]
+albedo_color = Color(0.020, 0.027, 0.047, 1)
+emission = Color(0.227, 0.949, 0.839, 1)
+emission_energy = 0.25
+roughness = 0.3
+uv1_triplanar = true
 
 [node name="DiceViewportContainer" type="SubViewportContainer"]
 stretch = true
 size = Vector2(640, 360)
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="DiceViewport" type="SubViewport" parent="."]
 size = Vector2i(640, 360)
@@ -17,6 +39,9 @@ transparent_bg = true
 [node name="DiceRoot" type="Node3D" parent="DiceViewport"]
 script = ExtResource("1")
 
+[node name="WorldEnvironment" type="WorldEnvironment" parent="DiceViewport/DiceRoot"]
+environment = SubResource("1")
+
 [node name="Camera3D" type="Camera3D" parent="DiceViewport/DiceRoot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 6)
 current = true
@@ -25,3 +50,8 @@ fov = 55.0
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="DiceViewport/DiceRoot"]
 transform = Transform3D(0.766, -0.356, 0.536, 0.43, 0.902, -0.042, -0.479, 0.244, 0.844, 0, 3, 0)
 light_energy = 1.2
+
+[node name="Floor" type="MeshInstance3D" parent="DiceViewport/DiceRoot"]
+position = Vector3(0, 0, 0)
+mesh = SubResource("2")
+material_override = SubResource("3")

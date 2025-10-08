@@ -1,31 +1,37 @@
 extends Control
 class_name RunHudController
 
+const DieToken = preload("res://scripts/ui/die_token.gd")
+const DiceTokenShelf = preload("res://scripts/ui/dice_token_shelf.gd")
+const DiceLockSlot = preload("res://scripts/ui/dice_lock_slot.gd")
+const TurnManager = preload("res://scripts/systems/turn_manager.gd")
+
 signal roll_requested
 signal confirm_requested
-signal lock_requested(index: int)
+signal lock_requested(index: int, should_lock: bool)
 
 var _dice_subsystem = null
-@onready var _die_labels: Array[Label] = [
-	$"MainLayout/DiceSection/DiceValues/Die0" as Label,
-	$"MainLayout/DiceSection/DiceValues/Die1" as Label,
-	$"MainLayout/DiceSection/DiceValues/Die2" as Label
+@onready var _dice_token_shelf: DiceTokenShelf = $"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"
+@onready var _dice_tokens: Array[DieToken] = [
+	$"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0",
+	$"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1",
+	$"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2"
 ]
-@onready var _lock_buttons: Array[Button] = [
-	$"MainLayout/DiceSection/LockRow/Lock0",
-	$"MainLayout/DiceSection/LockRow/Lock1",
-	$"MainLayout/DiceSection/LockRow/Lock2"
+@onready var _lock_slots: Array[DiceLockSlot] = [
+	$"MainLayout/DiceDock/LockColumn/LockTray/LockSlot0",
+	$"MainLayout/DiceDock/LockColumn/LockTray/LockSlot1",
+	$"MainLayout/DiceDock/LockColumn/LockTray/LockSlot2"
 ]
-@onready var _roll_button: Button = $"MainLayout/DiceSection/ActionButtons/RollButton"
-@onready var _confirm_button: Button = $"MainLayout/DiceSection/ActionButtons/ConfirmButton"
-@onready var _exhaust_label: Label = $"MainLayout/DiceSection/ExhaustTray/ExhaustLabel"
+@onready var _roll_button: Button = $"MainLayout/DiceDock/LockColumn/ActionButtons/RollButton"
+@onready var _confirm_button: Button = $"MainLayout/DiceDock/LockColumn/ActionButtons/ConfirmButton"
+@onready var _exhaust_label: Label = $"MainLayout/DiceDock/LockColumn/ExhaustTray/ExhaustLabel"
 @onready var _resource_panel = $"MainLayout/ResourcePanel"
 @onready var _room_list: VBoxContainer = $"MainLayout/MainBody/LeftDock/RoomList"
 @onready var _threat_list: VBoxContainer = $"MainLayout/MainBody/LeftDock/ThreatList"
-@onready var _context_info: RichTextLabel = $"MainLayout/MainBody/RightColumn/ContextInfo"
-@onready var _enter_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextActions/EnterButton"
-@onready var _cycle_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextActions/CycleButton"
-@onready var _scout_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextActions/ScoutButton"
+@onready var _context_info: RichTextLabel = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextScroll/ContextInfo"
+@onready var _enter_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions/EnterButton"
+@onready var _cycle_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions/CycleButton"
+@onready var _scout_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions/ScoutButton"
 @onready var _banner_panel: PanelContainer = $"MainLayout/MessageBanner"
 @onready var _banner_label: Label = $"MainLayout/MessageBanner/BannerVBox/BannerLabel"
 @onready var _banner_timer: Timer = $"MainLayout/MessageTimer"
@@ -49,22 +55,29 @@ var _current_queue: Array[Dictionary] = []
 var _last_scouted_room: Dictionary = {}
 var _tutorial_service: Node = null
 var _telemetry_hub: Node = null
+var _die_slot_map: Dictionary = {}
 
 func _ready() -> void:
 	_connect_inputs()
 	_connect_services()
 	if _equipment_tab != null and _equipment_tab.has_signal("placement_failed"):
 		_equipment_tab.placement_failed.connect(_on_equipment_placement_failed)
-	if _dice_subsystem == null and has_node("MainLayout/DiceSection/DiceViewportContainer/DiceViewport/DiceRoot"):
-		_dice_subsystem = get_node("MainLayout/DiceSection/DiceViewportContainer/DiceViewport/DiceRoot")
+	if _dice_subsystem == null and has_node("MainLayout/DiceDock/DiceViewportFrame/DiceViewportContainer/DiceViewport/DiceRoot"):
+		_dice_subsystem = get_node("MainLayout/DiceDock/DiceViewportFrame/DiceViewportContainer/DiceViewport/DiceRoot")
 	reset_hud_state()
 	refresh_resource_panel()
 
 func _connect_inputs() -> void:
 	_roll_button.pressed.connect(_on_roll_pressed)
 	_confirm_button.pressed.connect(_on_confirm_pressed)
-	for index in _lock_buttons.size():
-		_lock_buttons[index].pressed.connect(_on_lock_button_pressed.bind(index))
+	for slot in _lock_slots:
+		if slot and not slot.die_drop_requested.is_connected(_on_lock_slot_drop):
+			slot.die_drop_requested.connect(_on_lock_slot_drop)
+	if _dice_token_shelf and not _dice_token_shelf.die_released.is_connected(_on_die_released):
+		_dice_token_shelf.die_released.connect(_on_die_released)
+	for token in _dice_tokens:
+		if token:
+			token.set_die_name(_die_name_for_index(token.die_index))
 	_enter_room_button.pressed.connect(_on_enter_room_pressed)
 	_cycle_room_button.pressed.connect(_on_cycle_room_pressed)
 	_scout_room_button.pressed.connect(_on_scout_room_pressed)
@@ -103,7 +116,7 @@ func set_turn_manager(turn_manager) -> void:
 	_turn_manager = turn_manager
 	roll_requested.connect(_turn_manager.request_roll)
 	confirm_requested.connect(_turn_manager.commit_dice)
-	lock_requested.connect(_turn_manager.toggle_lock)
+	lock_requested.connect(_on_lock_request)
 	if not _turn_manager.room_entered.is_connected(_on_room_entered):
 		_turn_manager.room_entered.connect(_on_room_entered)
 	if not _turn_manager.room_cycled.is_connected(_on_room_cycled):
@@ -120,26 +133,62 @@ func set_turn_manager(turn_manager) -> void:
 		_turn_manager.loot_awarded.connect(_on_loot_awarded)
 
 func get_dice_subsystem():
-	if _dice_subsystem == null and has_node("MainLayout/DiceSection/DiceViewportContainer/DiceViewport/DiceRoot"):
-		_dice_subsystem = get_node("MainLayout/DiceSection/DiceViewportContainer/DiceViewport/DiceRoot")
+	if _dice_subsystem == null:
+		var path_new := NodePath("MainLayout/DiceDock/DiceViewportFrame/DiceViewportContainer/DiceViewport/DiceRoot")
+		var path_legacy := NodePath("MainLayout/DiceSection/DiceViewportFrame/DiceViewportContainer/DiceViewport/DiceRoot")
+		var path_older := NodePath("MainLayout/DiceSection/DiceViewportContainer/DiceViewport/DiceRoot")
+		if has_node(path_new):
+			_dice_subsystem = get_node(path_new)
+		elif has_node(path_legacy):
+			_dice_subsystem = get_node(path_legacy)
+		elif has_node(path_older):
+			_dice_subsystem = get_node(path_older)
 	return _dice_subsystem
 
 func reset_hud_state() -> void:
+	_reset_lock_ui()
 	update_for_roll([1, 1, 1], [], [])
 	refresh_resource_panel()
 
 func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[int]) -> void:
-	for index in _die_labels.size():
-		var label = _die_labels[index]
-		var value: int = results[index] if index < results.size() else 0
-		var suffix: String = ""
-		if index in locked:
-			suffix = " (locked)"
-		elif index in exhausted:
-			suffix = " (exhausted)"
-		label.text = _die_label_for_index(index, value, suffix)
-		_lock_buttons[index].button_pressed = index in locked
-		_lock_buttons[index].disabled = index in exhausted
+	var locked_lookup: Dictionary = {}
+	for index in locked:
+		locked_lookup[index] = true
+	for slot in _lock_slots:
+		if slot == null:
+			continue
+		var token := slot.current_token
+		if token and not locked_lookup.has(token.die_index):
+			slot.release_token(token)
+			_die_slot_map.erase(token.die_index)
+			_ensure_token_in_shelf(token)
+	var available_slots: Array[int] = []
+	for slot_index in _lock_slots.size():
+		var slot := _lock_slots[slot_index]
+		if slot and slot.current_token == null:
+			available_slots.append(slot_index)
+	for token in _dice_tokens:
+		if token == null:
+			continue
+		var die_index: int = token.die_index
+		var value: int = results[die_index] if die_index < results.size() else 0
+		var is_exhausted: bool = die_index in exhausted
+		var should_lock: bool = locked_lookup.has(die_index) and not is_exhausted
+		token.set_value(value)
+		if should_lock:
+			var slot_index: int = int(_die_slot_map.get(die_index, -1))
+			if slot_index < 0 or slot_index >= _lock_slots.size() or _lock_slots[slot_index].current_token != token:
+				if slot_index >= 0 and slot_index < _lock_slots.size():
+					_lock_slots[slot_index].release_token(token)
+				slot_index = 0 if available_slots.is_empty() else available_slots.pop_front()
+				_assign_token_to_slot(token, slot_index)
+			else:
+				token.set_locked(true)
+		else:
+			_ensure_token_in_shelf(token)
+			token.set_locked(false)
+			_die_slot_map.erase(die_index)
+		token.set_exhausted(is_exhausted)
 	_update_exhaust_label(exhausted)
 
 func refresh_resource_panel() -> void:
@@ -152,14 +201,6 @@ func _on_roll_pressed() -> void:
 func _on_confirm_pressed() -> void:
 	confirm_requested.emit()
 
-func _on_lock_button_pressed(index: int) -> void:
-	lock_requested.emit(index)
-
-func _die_label_for_index(index: int, value: int, suffix: String) -> String:
-	var names: Array[String] = ["Die A", "Die B", "Die C"]
-	var die_name: String = names[index] if index < names.size() else "Die"
-	return "%s: %d%s" % [die_name, value, suffix]
-
 func _update_exhaust_label(exhausted: Array[int]) -> void:
 	if exhausted.is_empty():
 		_exhaust_label.text = "Exhausted Dice: none"
@@ -170,6 +211,87 @@ func _update_exhaust_label(exhausted: Array[int]) -> void:
 		if index < mapping.size():
 			parts.append(mapping[index])
 	_exhaust_label.text = "Exhausted Dice: %s" % ", ".join(parts)
+
+func _reset_lock_ui() -> void:
+	_die_slot_map.clear()
+	for slot in _lock_slots:
+		if slot:
+			slot.clear_slot()
+	if _dice_token_shelf:
+		for token in _dice_tokens:
+			if token:
+				token.set_locked(false)
+				token.set_exhausted(false)
+				_dice_token_shelf.add_token(token)
+
+func _assign_token_to_slot(token: DieToken, slot_index: int) -> void:
+	if token == null:
+		return
+	if slot_index < 0 or slot_index >= _lock_slots.size():
+		return
+	var slot := _lock_slots[slot_index]
+	if slot == null:
+		return
+	_release_token_from_slots(token)
+	if token.get_parent() == _dice_token_shelf:
+		_dice_token_shelf.remove_token(token)
+	slot.accept_token(token)
+	_die_slot_map[token.die_index] = slot_index
+
+func _release_token_from_slots(token: DieToken) -> void:
+	for slot in _lock_slots:
+		if slot and slot.current_token == token:
+			slot.release_token(token)
+
+func _ensure_token_in_shelf(token: DieToken) -> void:
+	if token == null or _dice_token_shelf == null:
+		return
+	_release_token_from_slots(token)
+	_die_slot_map.erase(token.die_index)
+	if token.get_parent() != _dice_token_shelf:
+		_dice_token_shelf.add_token(token)
+func _die_name_for_index(index: int) -> String:
+	var names: Array[String] = ["Die A", "Die B", "Die C"]
+	return names[index] if index < names.size() else "Die"
+
+func _resolve_token_from_path(token_path: NodePath) -> DieToken:
+	if token_path.is_empty():
+		return null
+	if not has_node(token_path):
+		return null
+	var node := get_node(token_path)
+	if node is DieToken:
+		return node
+	return null
+
+func _on_lock_slot_drop(token_path: NodePath, die_index: int, slot_index: int) -> void:
+	var token := _resolve_token_from_path(token_path)
+	if token == null:
+		return
+	if _turn_manager and _turn_manager.has_method("get_state"):
+		if _turn_manager.get_state() != TurnManager.TurnState.ACTION:
+			_ensure_token_in_shelf(token)
+			return
+	_assign_token_to_slot(token, slot_index)
+	lock_requested.emit(die_index, true)
+
+func _on_die_released(token_path: NodePath, die_index: int) -> void:
+	var token := _resolve_token_from_path(token_path)
+	if token == null:
+		return
+	_ensure_token_in_shelf(token)
+	lock_requested.emit(die_index, false)
+
+func _on_lock_request(index: int, should_lock: bool) -> void:
+	if _turn_manager == null:
+		return
+	if _turn_manager.has_method("set_lock"):
+		_turn_manager.set_lock(index, should_lock)
+	elif _turn_manager.has_method("toggle_lock"):
+		var subsystem = get_dice_subsystem()
+		var currently_locked: bool = subsystem != null and subsystem.is_die_locked(index)
+		if currently_locked != should_lock:
+			_turn_manager.toggle_lock(index)
 
 func _on_room_queue_updated(queue: Array[Dictionary]) -> void:
 	_clear_children(_room_list)

@@ -1,20 +1,21 @@
 [gd_scene load_steps=6 format=3 uid="uid://resource_panel"]
 
 [ext_resource type="Script" path="res://scripts/ui/resource_panel_controller.gd" id="1"]
-[ext_resource type="Theme" path="res://resources/ui/resource_meter_theme.tres" id="2"]
+[ext_resource type="Theme" path="res://themes/base_theme.tres" id="2"]
 [ext_resource type="Resource" path="res://resources/config/resource_thresholds.tres" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/threat_meter.tscn" id="4"]
 
 [sub_resource type="StyleBoxFlat" id="1"]
-bg_color = Color(0.070588, 0.094118, 0.121569, 0.88)
-corner_radius_bottom_left = 6
-corner_radius_bottom_right = 6
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-expand_margin_left = 4.0
-expand_margin_right = 4.0
-expand_margin_top = 4.0
-expand_margin_bottom = 4.0
+bg_color = Color(0.043, 0.059, 0.094, 0.88)
+corner_radius_bottom_left = 8
+corner_radius_bottom_right = 8
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+border_color = Color(0.216, 0.968, 0.769, 0.2)
+border_width_left = 1
+border_width_right = 1
+border_width_top = 1
+border_width_bottom = 1
 
 [node name="ResourcePanel" type="HBoxContainer"]
 custom_minimum_size = Vector2(0, 120)

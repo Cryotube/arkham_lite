@@ -111,11 +111,17 @@ func request_roll() -> void:
 	_dice_subsystem.request_roll()
 
 func toggle_lock(index: int) -> void:
+	if _dice_subsystem == null:
+		return
+	set_lock(index, not _dice_subsystem.is_die_locked(index))
+
+func set_lock(index: int, should_lock: bool) -> void:
 	if _state != TurnState.ACTION:
 		return
 	if _dice_subsystem == null:
 		return
-	var should_lock = not _dice_subsystem.is_die_locked(index)
+	if _dice_subsystem.is_die_locked(index) == should_lock:
+		return
 	_dice_subsystem.set_die_locked(index, should_lock)
 	_update_hud()
 

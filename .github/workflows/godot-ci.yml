@@ -1,0 +1,26 @@
+name: Godot CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Godot
+        uses: firebelley/setup-godot@v1
+        with:
+          version: "4.5"
+          use-dotnet: false
+
+      - name: Run headless checks and tests
+        run: |
+          chmod +x scripts/run_ci.sh
+          ./scripts/run_ci.sh

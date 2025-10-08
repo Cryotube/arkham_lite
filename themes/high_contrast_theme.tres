@@ -1,0 +1,25 @@
+[gd_resource type="Theme" load_steps=3 format=3 uid="uid://high_contrast_theme"]
+
+[ext_resource type="Theme" path="res://themes/base_theme.tres" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="1"]
+bg_color = Color(0.071, 0.082, 0.063, 1)
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+border_color = Color(0.992, 1, 0.231, 1)
+border_width_left = 1
+border_width_right = 1
+border_width_top = 1
+border_width_bottom = 1
+
+[resource]
+resource_name = "HighContrastTheme"
+resource_base = ExtResource("1")
+Label/colors/font_color = Color(0.992, 1, 0.231, 1)
+Label/colors/font_outline_color = Color(0, 0, 0, 1)
+Button/colors/font_color = Color(0.992, 1, 0.231, 1)
+Button/colors/font_hover_color = Color(0, 0, 0, 1)
+ProgressBar/styles/fill = SubResource("1")
+ProgressBar/colors/font_color = Color(0.071, 0.082, 0.063, 1)
