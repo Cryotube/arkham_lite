@@ -49,10 +49,10 @@ color = Color(0.011, 0.015, 0.027, 0.9)
 
 [node name="MainLayout" type="VBoxContainer" parent="."]
 anchors_preset = 8
-anchor_left = 0.05
-anchor_top = 0.03
-anchor_right = 0.95
-anchor_bottom = 0.97
+anchor_left = 0.04
+anchor_top = 0.02
+anchor_right = 0.96
+anchor_bottom = 0.98
 offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
@@ -70,10 +70,10 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 6
 
 [node name="LeftDock" type="VBoxContainer" parent="MainLayout/MainBody"]
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(240, 0)
 size_flags_horizontal = 1
 size_flags_vertical = 3
-separation = 16
+separation = 10
 
 [node name="RoomPanel" type="PanelContainer" parent="MainLayout/MainBody/LeftDock"]
 size_flags_horizontal = 3
@@ -81,15 +81,15 @@ size_flags_vertical = 3
 theme_override_styles/panel = SubResource("1")
 
 [node name="RoomMargin" type="MarginContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel"]
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="RoomVBox" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-separation = 12
+separation = 8
 
 [node name="RoomHeader" type="HBoxContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox"]
 size_flags_horizontal = 3
@@ -99,7 +99,7 @@ alignment = 1
 text = "Rooms"
 size_flags_horizontal = 3
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 15
 
 [node name="RoomScroll" type="ScrollContainer" parent="MainLayout/MainBody/LeftDock/RoomPanel/RoomMargin/RoomVBox"]
 size_flags_horizontal = 3
@@ -126,15 +126,15 @@ size_flags_vertical = 3
 theme_override_styles/panel = SubResource("1")
 
 [node name="ThreatMargin" type="MarginContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel"]
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="ThreatVBox" type="VBoxContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-separation = 12
+separation = 8
 
 [node name="ThreatHeader" type="HBoxContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox"]
 size_flags_horizontal = 3
@@ -144,7 +144,7 @@ alignment = 1
 text = "Threats"
 size_flags_horizontal = 3
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 15
 
 [node name="ThreatScroll" type="ScrollContainer" parent="MainLayout/MainBody/LeftDock/ThreatPanel/ThreatMargin/ThreatVBox"]
 size_flags_horizontal = 3
@@ -168,7 +168,7 @@ separation = 6
 [node name="RightColumn" type="VBoxContainer" parent="MainLayout/MainBody"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-separation = 16
+separation = 10
 
 [node name="ContextPane" type="PanelContainer" parent="MainLayout/MainBody/RightColumn"]
 size_flags_horizontal = 3
@@ -177,19 +177,19 @@ custom_minimum_size = Vector2(0, 180)
 theme_override_styles/panel = SubResource("1")
 
 [node name="ContextMargin" type="MarginContainer" parent="MainLayout/MainBody/RightColumn/ContextPane"]
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
 [node name="ContextVBox" type="VBoxContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-separation = 12
+separation = 8
 
 [node name="ContextHeader" type="Label" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
 text = "Context"
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 15
 
 [node name="ContextScroll" type="ScrollContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
 size_flags_horizontal = 3
@@ -204,7 +204,7 @@ text = "Select a room or threat to view details."
 [node name="ContextActions" type="HBoxContainer" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox"]
 visible = true
 alignment = 1
-separation = 12
+separation = 8
 
 [node name="EnterButton" type="Button" parent="MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions"]
 text = "Enter Top Room"
@@ -309,14 +309,14 @@ separation = 4
 size_flags_horizontal = 3
 size_flags_vertical = 1
 size_flags_stretch_ratio = 3
-split_offset = 780
+split_offset = 640
 dragger_visibility = 1
-custom_minimum_size = Vector2(0, 220)
+custom_minimum_size = Vector2(0, 190)
 
 [node name="DiceViewportFrame" type="PanelContainer" parent="MainLayout/DiceDock"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-custom_minimum_size = Vector2(0, 180)
+custom_minimum_size = Vector2(0, 160)
 theme_override_styles/panel = SubResource("1")
 
 [node name="DiceViewportContainer" parent="MainLayout/DiceDock/DiceViewportFrame" instance=ExtResource("2")]
@@ -338,10 +338,10 @@ anchor_left = 0.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 12.0
-offset_top = -160.0
-offset_right = -12.0
-offset_bottom = -12.0
+offset_left = 8.0
+offset_top = -120.0
+offset_right = -8.0
+offset_bottom = -8.0
 
 [node name="OverlayVBox" type="VBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay"]
 size_flags_horizontal = 3
@@ -357,7 +357,7 @@ theme_override_colors/font_color = Color(0.49, 0.901961, 0.968627, 1)
 [node name="AvailableDiceRow" type="HBoxContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox"]
 size_flags_horizontal = 3
 size_flags_vertical = 1
-separation = 12
+separation = 8
 script = ExtResource("6")
 
 [node name="Placeholder" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
@@ -367,7 +367,7 @@ theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 [node name="DieToken0" type="PanelContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-custom_minimum_size = Vector2(110, 96)
+custom_minimum_size = Vector2(90, 80)
 script = ExtResource("7")
 die_index = 0
 
@@ -382,7 +382,7 @@ horizontal_alignment = 1
 [node name="ValueLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0/VBox"]
 text = "1"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 22
 
 [node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0/VBox"]
 text = "Held"
@@ -393,7 +393,7 @@ theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
 [node name="DieToken1" type="PanelContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-custom_minimum_size = Vector2(110, 96)
+custom_minimum_size = Vector2(90, 80)
 script = ExtResource("7")
 die_index = 1
 
@@ -408,7 +408,7 @@ horizontal_alignment = 1
 [node name="ValueLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1/VBox"]
 text = "1"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 22
 
 [node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken1/VBox"]
 text = "Held"
@@ -419,7 +419,7 @@ theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
 [node name="DieToken2" type="PanelContainer" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-custom_minimum_size = Vector2(110, 96)
+custom_minimum_size = Vector2(90, 80)
 script = ExtResource("7")
 die_index = 2
 
@@ -434,7 +434,7 @@ horizontal_alignment = 1
 [node name="ValueLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2/VBox"]
 text = "1"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 22
 
 [node name="StatusLabel" type="Label" parent="MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken2/VBox"]
 text = "Held"
@@ -445,8 +445,8 @@ theme_override_colors/font_color = Color(0.764706, 0.945098, 1, 1)
 [node name="LockColumn" type="VBoxContainer" parent="MainLayout/DiceDock"]
 size_flags_horizontal = 1
 size_flags_vertical = 3
-custom_minimum_size = Vector2(260, 220)
-separation = 12
+custom_minimum_size = Vector2(220, 200)
+separation = 10
 
 [node name="LockLabel" type="Label" parent="MainLayout/DiceDock/LockColumn"]
 text = "Hold Rail"
@@ -456,12 +456,12 @@ theme_override_colors/font_color = Color(0.49, 0.901961, 0.968627, 1)
 [node name="LockTray" type="VBoxContainer" parent="MainLayout/DiceDock/LockColumn"]
 size_flags_horizontal = 3
 size_flags_vertical = 3
-separation = 10
+separation = 8
 
 [node name="LockSlot0" type="PanelContainer" parent="MainLayout/DiceDock/LockColumn/LockTray"]
 size_flags_horizontal = 3
 size_flags_vertical = 1
-custom_minimum_size = Vector2(120, 76)
+custom_minimum_size = Vector2(100, 64)
 script = ExtResource("8")
 slot_index = 0
 
@@ -478,7 +478,7 @@ theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 [node name="LockSlot1" type="PanelContainer" parent="MainLayout/DiceDock/LockColumn/LockTray"]
 size_flags_horizontal = 3
 size_flags_vertical = 1
-custom_minimum_size = Vector2(120, 76)
+custom_minimum_size = Vector2(100, 64)
 script = ExtResource("8")
 slot_index = 1
 
@@ -495,7 +495,7 @@ theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 [node name="LockSlot2" type="PanelContainer" parent="MainLayout/DiceDock/LockColumn/LockTray"]
 size_flags_horizontal = 3
 size_flags_vertical = 1
-custom_minimum_size = Vector2(120, 76)
+custom_minimum_size = Vector2(100, 64)
 script = ExtResource("8")
 slot_index = 2
 
@@ -511,7 +511,7 @@ theme_override_colors/font_color = Color(0.643137, 0.678431, 0.741176, 1)
 
 [node name="ActionButtons" type="HBoxContainer" parent="MainLayout/DiceDock/LockColumn"]
 alignment = 1
-separation = 12
+separation = 8
 
 [node name="RollButton" type="Button" parent="MainLayout/DiceDock/LockColumn/ActionButtons"]
 text = "Roll"

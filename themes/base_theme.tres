@@ -108,7 +108,7 @@ border_width_top = 1
 border_width_bottom = 1
 
 [resource]
-default_font_size = 16
+default_font_size = 14
 default_font_outline_color = Color(0.047, 0.749, 0.596, 0.25)
 ColorRect/colors/color = Color(0.047, 0.063, 0.090, 0.75)
 Label/colors/font_color = Color(0.905, 0.964, 0.996, 1)

@@ -14,6 +14,10 @@ signal confirm_requested
 signal hold_requested(index: int, should_hold: bool)
 
 var _dice_subsystem = null
+var _rolling: bool = false
+var _last_locked: Array[int] = []
+var _last_held: Array[int] = []
+var _last_exhausted: Array[int] = []
 @onready var _dice_token_shelf: DiceTokenShelf = $"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow"
 @onready var _dice_tokens: Array[DieToken] = [
 	$"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/AvailableDiceRow/DieToken0",
@@ -28,6 +32,7 @@ var _dice_subsystem = null
 @onready var _roll_button: Button = $"MainLayout/DiceDock/LockColumn/ActionButtons/RollButton"
 @onready var _confirm_button: Button = $"MainLayout/DiceDock/LockColumn/ActionButtons/ConfirmButton"
 @onready var _exhaust_label: Label = $"MainLayout/DiceDock/LockColumn/ExhaustTray/ExhaustLabel"
+@onready var _overlay_hint: Label = $"MainLayout/DiceDock/DiceViewportFrame/ViewportOverlay/DiceOverlay/OverlayVBox/OverlayHint"
 @onready var _resource_panel = $"MainLayout/ResourcePanel"
 @onready var _context_info: RichTextLabel = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextScroll/ContextInfo"
 @onready var _enter_room_button: Button = $"MainLayout/MainBody/RightColumn/ContextPane/ContextMargin/ContextVBox/ContextActions/EnterButton"
@@ -73,6 +78,7 @@ func _ready() -> void:
 		_equipment_tab.placement_failed.connect(_on_equipment_placement_failed)
 	if _dice_subsystem == null and has_node("MainLayout/DiceDock/DiceViewportFrame/DiceViewportContainer/DiceViewport/DiceRoot"):
 		_dice_subsystem = get_node("MainLayout/DiceDock/DiceViewportFrame/DiceViewportContainer/DiceViewport/DiceRoot")
+	_wire_dice_signals()
 	reset_hud_state()
 	refresh_resource_panel()
 
@@ -141,6 +147,9 @@ func set_turn_manager(turn_manager) -> void:
 		_turn_manager.threat_attack_processed.connect(_on_threat_attack_processed)
 	if not _turn_manager.loot_awarded.is_connected(_on_loot_awarded):
 		_turn_manager.loot_awarded.connect(_on_loot_awarded)
+	_wire_dice_signals()
+	_update_action_buttons()
+	_update_overlay_hint()
 
 func get_dice_subsystem():
 	if _dice_subsystem == null:
@@ -155,9 +164,24 @@ func get_dice_subsystem():
 			_dice_subsystem = get_node(path_older)
 	return _dice_subsystem
 
+func _wire_dice_signals() -> void:
+	var dice = get_dice_subsystem()
+	if dice == null:
+		return
+	if dice.has_signal("roll_started") and not dice.roll_started.is_connected(_on_dice_roll_started):
+		dice.roll_started.connect(_on_dice_roll_started)
+	if dice.has_signal("roll_resolved") and not dice.roll_resolved.is_connected(_on_dice_roll_resolved):
+		dice.roll_resolved.connect(_on_dice_roll_resolved)
+
 func reset_hud_state() -> void:
 	_reset_lock_ui()
+	_last_locked.clear()
+	_last_held.clear()
+	_last_exhausted.clear()
+	_rolling = false
 	update_for_roll([1, 1, 1], [], [], [])
+	_update_action_buttons()
+	_update_overlay_hint()
 	refresh_resource_panel()
 
 func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[int], held: Array[int] = []) -> void:
@@ -167,6 +191,9 @@ func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[i
 	var held_lookup: Dictionary = {}
 	for index in held:
 		held_lookup[index] = true
+	_last_locked = locked.duplicate()
+	_last_held = held.duplicate()
+	_last_exhausted = exhausted.duplicate()
 	for slot in _lock_slots:
 		if slot == null:
 			continue
@@ -209,6 +236,8 @@ func update_for_roll(results: Array[int], locked: Array[int], exhausted: Array[i
 			_die_slot_map.erase(die_index)
 		token.set_exhausted(is_exhausted)
 	_update_exhaust_label(exhausted)
+	_update_action_buttons()
+	_update_overlay_hint()
 
 func refresh_resource_panel() -> void:
 	if _resource_panel and _resource_panel.has_method("refresh"):
@@ -230,6 +259,55 @@ func _update_exhaust_label(exhausted: Array[int]) -> void:
 		if index < mapping.size():
 			parts.append(mapping[index])
 	_exhaust_label.text = "Exhausted Dice: %s" % ", ".join(parts)
+
+func _update_action_buttons() -> void:
+	var state := _current_turn_state()
+	_roll_button.disabled = _rolling or _turn_manager == null
+	if not _roll_button.disabled and (state == TurnManager.TurnState.ROLLING or state == TurnManager.TurnState.RESOLUTION):
+		_roll_button.disabled = true
+	_confirm_button.disabled = _rolling or _turn_manager == null or state != TurnManager.TurnState.ACTION
+
+func _update_overlay_hint() -> void:
+	if _overlay_hint == null:
+		return
+	if _rolling:
+		_overlay_hint.text = "Rolling..."
+		return
+	var state := _current_turn_state()
+	match state:
+		TurnManager.TurnState.ACTION:
+			if not _last_locked.is_empty():
+				_overlay_hint.text = "Confirm to commit locked dice."
+			elif not _last_held.is_empty():
+				_overlay_hint.text = "Held dice stay between rolls."
+			elif _last_exhausted.size() >= _dice_tokens.size():
+				_overlay_hint.text = "Confirm to refresh your dice."
+			else:
+				_overlay_hint.text = "Drag dice into the lock zone to hold them."
+		TurnManager.TurnState.ROLL_PREP:
+			_overlay_hint.text = "Tap Roll to start the turn."
+		TurnManager.TurnState.RESOLUTION:
+			_overlay_hint.text = "Resolve the encounter, then roll again."
+		_:
+			_overlay_hint.text = "Tap Roll to start the turn."
+
+func _current_turn_state() -> int:
+	if _turn_manager == null:
+		return TurnManager.TurnState.IDLE
+	return _turn_manager.get_state()
+
+func _set_rolling(enabled: bool) -> void:
+	if _rolling == enabled:
+		return
+	_rolling = enabled
+	_update_action_buttons()
+	_update_overlay_hint()
+
+func _on_dice_roll_started() -> void:
+	_set_rolling(true)
+
+func _on_dice_roll_resolved(_results: Array[int]) -> void:
+	_set_rolling(false)
 
 func _reset_lock_ui() -> void:
 	_die_slot_map.clear()

@@ -302,7 +302,18 @@ func _on_die_roll_completed(value: int, index: int) -> void:
     _pending_roll_indices.erase(index)
     if _pending_roll_indices.is_empty():
         _rolling = false
-        emit_signal("roll_resolved", _cached_results.duplicate())
+        call_deferred("_deferred_emit_roll_resolved", _cached_results.duplicate())
+
+func _deferred_emit_roll_resolved(results: Array) -> void:
+    var tree := get_tree()
+    if tree == null:
+        emit_signal("roll_resolved", results)
+        return
+    var timer := tree.create_timer(0.0, false, true)
+    timer.timeout.connect(_on_roll_resolved_timeout.bind(results), Object.CONNECT_ONE_SHOT)
+
+func _on_roll_resolved_timeout(results: Array) -> void:
+    emit_signal("roll_resolved", results)
 
 func _set_die_lock_visual(index: int, locked: bool) -> void:
     if index < 0 or index >= _dice_nodes.size():

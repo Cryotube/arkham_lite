@@ -34,6 +34,9 @@ size = Vector3(0.5, 3, 6)
 [sub_resource type="BoxShape3D" id="7"]
 size = Vector3(6, 0.2, 6)
 
+[sub_resource type="BoxShape3D" id="8"]
+size = Vector3(6, 3.4, 6)
+
 [node name="DiceViewportContainer" type="SubViewportContainer"]
 stretch = true
 size = Vector2(640, 360)
@@ -67,6 +70,7 @@ light_energy = 1.2
 position = Vector3(0, 0, 0)
 mesh = SubResource("2")
 material_override = SubResource("3")
+visible = false
 
 [node name="Bounds" type="Node3D" parent="DiceViewport/DiceRoot"]
 
@@ -117,3 +121,12 @@ collision_mask = 1
 
 [node name="CeilingShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/Ceiling"]
 shape = SubResource("7")
+
+[node name="GravityWell" type="Area3D" parent="DiceViewport/DiceRoot/Bounds"]
+gravity_space_override = 1
+gravity = 48.0
+gravity_vector = Vector3(0, -1, 0)
+monitorable = false
+
+[node name="GravityShape" type="CollisionShape3D" parent="DiceViewport/DiceRoot/Bounds/GravityWell"]
+shape = SubResource("8")
