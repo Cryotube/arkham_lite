@@ -100,7 +100,8 @@ func _start_physics_roll() -> void:
 
 func set_value(value: int, instant: bool = false) -> void:
 	_current_value = _clamp_value(value)
-	var basis := Basis.from_euler(FACE_ROTATIONS.get(_current_value, Vector3.ZERO))
+	var face_rotation: Vector3 = FACE_ROTATIONS.get(_current_value, Vector3.ZERO)
+	var basis: Basis = Basis.from_euler(face_rotation)
 	if instant:
 		linear_velocity = Vector3.ZERO
 		angular_velocity = Vector3.ZERO
@@ -159,12 +160,13 @@ func _finish_roll() -> void:
 	roll_completed.emit(_current_value)
 
 func _resolve_face_from_orientation() -> int:
-	var basis := global_transform.basis
+	var basis: Basis = global_transform.basis
 	var best_face := 1
-	var best_dot := -INF
+	var best_dot: float = -INF
 	for face in FACE_NORMALS.keys():
-		var world_dir := basis * FACE_NORMALS[face]
-		var dot := world_dir.dot(Vector3.UP)
+		var face_normal: Vector3 = FACE_NORMALS.get(face, Vector3.UP)
+		var world_dir: Vector3 = basis * face_normal
+		var dot: float = world_dir.dot(Vector3.UP)
 		if dot > best_dot:
 			best_dot = dot
 			best_face = face
